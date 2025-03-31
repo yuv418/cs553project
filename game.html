@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Flappy Bird Clone</title>
+  <style>
+    /* Basic reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #70c5ce; /* Temporary sky-blue background */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      user-select: none; /* Prevent text selection */
+      overflow: hidden;  /* Hide scrollbars */
+    }
+
+    #gameContainer {
+      position: relative;
+      width: 288px;  /* Standard Flappy Bird dimension */
+      height: 512px; /* Standard Flappy Bird dimension */
+      overflow: hidden;
+      background: #70c5ce; /* Fallback background */
+    }
+
+    /* Bird: a simple inline SVG in a container */
+    #bird {
+      position: absolute;
+      width: 34px;  /* Approx. original bird width */
+      height: 24px; /* Approx. original bird height */
+      left: 50px;
+      top: 200px;
+    }
+
+    /* Pipe containers */
+    .pipe {
+      position: absolute;
+      width: 52px; /* Original pipe width in Flappy Bird */
+      background: transparent; /* Will contain inline SVG */
+    }
+
+    .upperPipe, .lowerPipe {
+      width: 100%;
+      position: absolute;
+      overflow: hidden;
+    }
+
+    /* Ground container */
+    #ground {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 336px; /* Slightly larger to allow scrolling */
+      height: 112px; /* Approx. original ground height */
+      background-repeat: repeat-x;
+      animation: groundScroll 2s linear infinite;
+      z-index: 2; /* Above pipes but below bird */
+    }
+
+    @keyframes groundScroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-48px); }
+    }
+
+    /* Score display */
+    #score {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: sans-serif;
+      font-size: 32px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 2px 2px 2px black;
+      z-index: 5;
+    }
+
+    /* Game over overlay */
+    #gameOverOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 10;
+      color: #fff;
+      font-family: sans-serif;
+      text-align: center;
+    }
+
+    #finalScore {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    #bestScore {
+      font-size: 18px;
+      margin-bottom: 20px;
+    }
+
+    #restartBtn {
+      background: #fc0;
+      border: none;
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="gameContainer">
+    <!-- Temporary Bird SVG -->
+    <div id="bird">
+      <svg viewBox="0 0 34 24" width="34" height="24">
+        <rect x="0" y="0" width="34" height="24" fill="red" />
+      </svg>
+    </div>
+
+    <!-- Score Text -->
+    <div id="score">0</div>
+
+    <!-- Pipes will be dynamically generated -->
+
+    <!-- Temporary Ground SVG -->
+    <div id="ground">
+      <svg width="336" height="112">
+        <rect x="0" y="0" width="336" height="112" fill="#DED895"/>
+      </svg>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="gameOverOverlay">
+      <div id="finalScore"></div>
+      <div id="bestScore"></div>
+      <button id="restartBtn">PLAY AGAIN</button>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // Game variables
+      const container = document.getElementById('gameContainer');
+      const birdEl = document.getElementById('bird');
+      const scoreEl = document.getElementById('score');
+      const ground = document.getElementById('ground');
+      const gameOverOverlay = document.getElementById('gameOverOverlay');
+      const finalScoreEl = document.getElementById('finalScore');
+      const bestScoreEl = document.getElementById('bestScore');
+      const restartBtn = document.getElementById('restartBtn');
+
+      const containerWidth = container.clientWidth;   // 288
+      const containerHeight = container.clientHeight; // 512
+      const groundHeight = 112;
+      const pipeWidth = 52;
+      const pipeGap = 90; // Gap between upper and lower pipe
+      const gravity = 0.25;
+      const flapStrength = 4.6;
+      let birdX = 50;
+      let birdY = 200;
+      let birdVelocity = 0;
+      let score = 0;
+      let bestScore = 0;
+      let pipes = [];
+      let gameState = 'ready'; // 'ready', 'play', 'over'
+
+      let pipeInterval = null;
+      let gameLoopInterval = null;
+      let spawnRate = 2000; // Spawn pipes every 2 seconds
+
+      // For incremental difficulty (increase speed gradually)
+      let pipeSpeed = 2;
+      const maxPipeSpeed = 5;
+
+      // Start the game on click/tap
+      container.addEventListener('mousedown', handleInput);
+      container.addEventListener('touchstart', handleInput);
+
+      // Restart button
+      restartBtn.addEventListener('click', restartGame);
+
+      // Keyboard input
+      document.addEventListener('keydown', function(e) {
+        if (e.code === 'Space') {
+          handleInput();
+        }
+      });
+
+      function handleInput() {
+        if (gameState === 'ready') {
+          startGame();
+        } else if (gameState === 'play') {
+          // Flap
+          birdVelocity = -flapStrength;
+        }
+      }
+
+      function startGame() {
+        gameState = 'play';
+        score = 0;
+        scoreEl.textContent = score;
+        birdVelocity = 0;
+        birdY = 200;
+        pipes.forEach(pipe => pipe.remove());
+        pipes = [];
+        gameOverOverlay.style.display = 'none';
+
+        // Start spawning pipes
+        pipeInterval = setInterval(spawnPipe, spawnRate);
+
+        // Start game loop
+        gameLoopInterval = setInterval(gameLoop, 1000/60);
+      }
+
+      function spawnPipe() {
+        const pipeContainer = document.createElement('div');
+        pipeContainer.className = 'pipe';
+        pipeContainer.style.left = containerWidth + 'px';
+
+        // Random gap position
+        const pipeTopHeight = Math.floor(Math.random() * (containerHeight - groundHeight - pipeGap - 50)) + 50;
+        const pipeBottomHeight = containerHeight - groundHeight - pipeGap - pipeTopHeight;
+
+        // Upper pipe
+        const upperPipe = document.createElement('div');
+        upperPipe.className = 'upperPipe';
+        upperPipe.style.height = pipeTopHeight + 'px';
+        // Temporary inline SVG
+        upperPipe.innerHTML = `
+          <svg width="${pipeWidth}" height="${pipeTopHeight}">
+            <rect width="${pipeWidth}" height="${pipeTopHeight}" fill="green" />
+          </svg>
+        `;
+        pipeContainer.appendChild(upperPipe);
+
+        // Lower pipe
+        const lowerPipe = document.createElement('div');
+        lowerPipe.className = 'lowerPipe';
+        lowerPipe.style.top = (pipeTopHeight + pipeGap) + 'px';
+        lowerPipe.style.height = pipeBottomHeight + 'px';
+        // Temporary inline SVG
+        lowerPipe.innerHTML = `
+          <svg width="${pipeWidth}" height="${pipeBottomHeight}">
+            <rect width="${pipeWidth}" height="${pipeBottomHeight}" fill="green" />
+          </svg>
+        `;
+        pipeContainer.appendChild(lowerPipe);
+
+        container.insertBefore(pipeContainer, ground);
+        pipes.push(pipeContainer);
+      }
+
+      function gameLoop() {
+        // Update bird
+        birdVelocity += gravity;
+        birdY += birdVelocity;
+        birdEl.style.top = birdY + 'px';
+
+        // Simple rotation effect (like original)
+        const rotation = Math.min((birdVelocity / 10) * 90, 90);
+        birdEl.style.transform = `rotate(${rotation}deg)`;
+
+        // Check collisions
+        if (checkCollision()) {
+          gameOver();
+          return;
+        }
+
+        // Update pipes and check for scoring
+        for (let i = 0; i < pipes.length; i++) {
+          const pipe = pipes[i];
+          const pipeLeft = parseFloat(pipe.style.left);
+
+          // Move pipe
+          pipe.style.left = (pipeLeft - pipeSpeed) + 'px';
+
+          // If pipe passes out of view, remove it
+          if (pipeLeft + pipeWidth < 0) {
+            pipe.remove();
+            pipes.splice(i, 1);
+            i--;
+            // Increase score
+            score++;
+            scoreEl.textContent = score;
+            // Increase difficulty slightly
+            if (score % 5 === 0 && pipeSpeed < maxPipeSpeed) {
+              pipeSpeed += 0.5;
+            }
+            continue;
+          }
+        }
+
+        // Bird hits the ground
+        if (birdY + birdEl.clientHeight >= containerHeight - groundHeight) {
+          gameOver();
+        }
+      }
+
+      function checkCollision() {
+        const birdRect = birdEl.getBoundingClientRect();
+
+        for (let i = 0; i < pipes.length; i++) {
+          const pipe = pipes[i];
+          const upperPipe = pipe.querySelector('.upperPipe');
+          const lowerPipe = pipe.querySelector('.lowerPipe');
+
+          if (!upperPipe || !lowerPipe) continue;
+
+          const pipeLeft = parseFloat(pipe.style.left);
+          const pipeTopHeight = parseFloat(upperPipe.style.height);
+          const pipeBottomY = parseFloat(lowerPipe.style.top);
+
+          // Construct bounding boxes
+          const birdBox = {
+            left: birdRect.left,
+            right: birdRect.right,
+            top: birdRect.top,
+            bottom: birdRect.bottom
+          };
+
+          // Pipe bounding boxes
+          const upperPipeBox = {
+            left: pipeLeft + container.getBoundingClientRect().left,
+            right: pipeLeft + container.getBoundingClientRect().left + pipeWidth,
+            top: 0,
+            bottom: pipeTopHeight + container.getBoundingClientRect().top
+          };
+
+          const lowerPipeBox = {
+            left: pipeLeft + container.getBoundingClientRect().left,
+            right: pipeLeft + container.getBoundingClientRect().left + pipeWidth,
+            top: pipeBottomY + container.getBoundingClientRect().top,
+            bottom: container.getBoundingClientRect().top + pipeBottomY + parseFloat(lowerPipe.style.height)
+          };
+
+          // Collision check with upper pipe
+          if (
+            birdBox.right > upperPipeBox.left &&
+            birdBox.left < upperPipeBox.right &&
+            birdBox.bottom > upperPipeBox.top &&
+            birdBox.top < upperPipeBox.bottom
+          ) {
+            return true;
+          }
+
+          // Collision check with lower pipe
+          if (
+            birdBox.right > lowerPipeBox.left &&
+            birdBox.left < lowerPipeBox.right &&
+            birdBox.bottom > lowerPipeBox.top &&
+            birdBox.top < lowerPipeBox.bottom
+          ) {
+            return true;
+          }
+        }
+
+        return false;
+      }
+
+      function gameOver() {
+        gameState = 'over';
+        clearInterval(pipeInterval);
+        clearInterval(gameLoopInterval);
+
+        // Update best score
+        if (score > bestScore) {
+          bestScore = score;
+        }
+
+        finalScoreEl.textContent = 'SCORE: ' + score;
+        bestScoreEl.textContent = 'BEST: ' + bestScore;
+        gameOverOverlay.style.display = 'flex';
+      }
+
+      function restartGame() {
+        gameOverOverlay.style.display = 'none';
+        // Reset parameters
+        pipeSpeed = 2;
+        // Return to ready state
+        gameState = 'ready';
+        // Reset bird position
+        birdEl.style.top = '200px';
+        birdEl.style.transform = 'none';
+        // Reset pipe arrays
+        pipes.forEach(pipe => pipe.remove());
+        pipes = [];
+        score = 0;
+        scoreEl.textContent = score;
+      }
+    })();
+  </script>
+</body>
+</html>
