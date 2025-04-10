@@ -1,0 +1,14 @@
+enum SoundEffect {
+	JUMP = 0;
+	SCORE_INCREASED = 1;
+	DIE = 2;
+}
+
+message PlayMusicReq {
+	string game_id;
+	SoundEffect effect;
+}
+
+message PlayMusicResp {
+	repeated byte opus_payload;
+}

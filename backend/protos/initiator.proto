@@ -1,0 +1,7 @@
+message StartGameReq {
+	string jwt;		
+}
+
+message StartGameResp {
+	string game_id;
+}

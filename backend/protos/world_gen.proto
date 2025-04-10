@@ -1,0 +1,27 @@
+message WorldGenReq {
+	string game_id;
+}
+
+message PipeSpec {
+	int32 pipe_gap;
+	int32 pipe_start;
+	//  |      |
+	//  |      |
+	//  |      | 
+	//  |      |  <- Pipe start
+	//                  | 
+	//                  |
+	//                  |    -> gap
+	//                  |
+	//                  |
+	//  |      | <- Pipe start + pipe gap
+	//  |      |
+	//  |      | 
+	//  |      | 
+}
+
+message WorldGenerated {
+	// Spacing between pipes on x axis
+	int32 pipe_spacing;
+	repeated PipeSpec pipe_specs;
+}

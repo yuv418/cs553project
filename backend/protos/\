@@ -1,0 +1,17 @@
+message Pos {
+	int32 x;
+	int32 y;
+}
+
+message GenerateFrameReq {
+	string game_id;
+
+	Pos bird_position;
+
+	repeated Pos pipe_positions;
+	repeated Pos cloud_pos;
+}
+
+message GenerateFrameResp {
+	repeated byte frame_diff;
+}

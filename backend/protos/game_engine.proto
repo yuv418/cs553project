@@ -1,0 +1,9 @@
+enum Key {
+	SPACE = 1;
+}
+
+message Input {
+	int32 game_id;
+	string jwt;
+	Key key;
+}
