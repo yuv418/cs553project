@@ -1,0 +1,10 @@
+# https://buf.build/docs/configuration/v1/buf-gen-yaml/#version
+
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: flappy_bird_svc/protos/gen
+plugins:
+  - plugin: buf.build/protocolbuffers/go
+    out: generated
