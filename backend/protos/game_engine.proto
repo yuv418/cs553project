@@ -2,8 +2,13 @@ enum Key {
 	SPACE = 1;
 }
 
-message Input {
+message GameSrvReq {
 	int32 game_id;
 	string jwt;
 	Key key;
+}
+
+// Won't do anything on failure other than reject the requests.
+service InputService {
+	rpc GetFeature(Input);
 }

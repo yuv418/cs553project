@@ -12,3 +12,8 @@ message PlayMusicReq {
 message PlayMusicResp {
 	repeated byte opus_payload;
 }
+
+service MusicService {
+	rpc PlayMusic(PlayMusicReq) returns (PlayMusicResp) {}
+
+}

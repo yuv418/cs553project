@@ -1,6 +1,8 @@
 syntax = "proto3";
+
 package auth;
 option go_package = ".;authpb";
+
 
 message AuthRequest {
   string username = 1;
@@ -8,7 +10,7 @@ message AuthRequest {
 }
 
 message AuthResponse {
-  string jwt_token = 1;
+  optional string jwt_token = 1;
 }
 
 service AuthService {

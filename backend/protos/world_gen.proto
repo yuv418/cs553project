@@ -25,3 +25,7 @@ message WorldGenerated {
 	int32 pipe_spacing;
 	repeated PipeSpec pipe_specs;
 }
+
+service WorldGeneratorService {
+	rpc GenerateWorld(WorldGenReq) returns (WorldGenerated) {};
+}

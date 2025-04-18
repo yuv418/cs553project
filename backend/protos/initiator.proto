@@ -5,3 +5,7 @@ message StartGameReq {
 message StartGameResp {
 	string game_id;
 }
+
+service InitiatorService {
+	rpc StartGame(StartGameReq) returns (StartGameResp) {}
+}
