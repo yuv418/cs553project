@@ -1,3 +1,5 @@
+syntax = "proto3";
+
 enum SoundEffect {
 	JUMP = 0;
 	SCORE_INCREASED = 1;

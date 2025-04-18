@@ -1,3 +1,5 @@
+syntax = "proto3";
+
 message Pos {
 	int32 x;
 	int32 y;
