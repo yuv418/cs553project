@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	authpb "github.com/yuv418/cs553project/backend/protos/gen"
+	authpb "github.com/yuv418/cs553project/backend/protos/auth"
 
 	"github.com/golang-jwt/jwt/v5"
 	"google.golang.org/grpc"
