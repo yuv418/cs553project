@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package frame_generator;
+
 message Pos {
 	int32 x = 1;
 	int32 y = 2;

@@ -1,4 +1,4 @@
-module github.com/yuv418/cs553project/backend/authentication-service
+module github.com/yuv418/cs553project/backend
 
 go 1.24.2
 

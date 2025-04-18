@@ -4,7 +4,7 @@ version: v1
 managed:
   enabled: true
   go_package_prefix:
-    default: flappy_bird_svc/protos/gen
+    default: protos/gen
 plugins:
-  - plugin: buf.build/protocolbuffers/go
-    out: generated
+  - plugin: buf.build/grpc/go
+    out: .
