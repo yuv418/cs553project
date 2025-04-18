@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+enum Key {
+	SPACE = 0;
+}
+
+message GameEngineReq {
+	string jwt = 1;
+	int32 game_id = 2;
+	Key key = 3;
+}
+
+// Won't do anything on failure other than reject the requests.
+service InputService {
+	rpc GetFeature(GameEngineReq) returns (google.protobuf.Empty) {};
+}

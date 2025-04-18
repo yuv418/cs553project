@@ -1,12 +1,12 @@
 syntax = "proto3";
 
 message WorldGenReq {
-	string game_id;
+	string game_id = 1;
 }
 
 message PipeSpec {
-	int32 pipe_gap;
-	int32 pipe_start;
+	int32 pipe_gap = 1;
+	int32 pipe_start = 2;
 	//  |      |
 	//  |      |
 	//  |      | 
@@ -24,8 +24,8 @@ message PipeSpec {
 
 message WorldGenerated {
 	// Spacing between pipes on x axis
-	int32 pipe_spacing;
-	repeated PipeSpec pipe_specs;
+	int32 pipe_spacing = 1;
+	repeated PipeSpec pipe_specs = 2;
 }
 
 service WorldGeneratorService {

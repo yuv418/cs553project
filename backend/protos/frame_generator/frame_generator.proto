@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+message Pos {
+	int32 x = 1;
+	int32 y = 2;
+}
+
+message GenerateFrameReq {
+	string game_id = 1;
+
+	Pos bird_position = 2;
+
+	// The clouds should be fixed and part of the background
+	repeated Pos pipe_positions = 3;
+
+	// Please consult the world generator for what this means
+	repeated int32 pipe_starts = 4;
+	repeated int32 pipe_gaps = 5;	
+
+	int32 score = 6;
+}
+
+message GenerateFrameResp {
+	bytes frame_diff = 7;
+}
+
+service FrameGenService {
+	rpc GenerateFrame(GenerateFrameReq) returns (GenerateFrameResp) {}
+}

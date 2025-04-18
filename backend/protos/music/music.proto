@@ -7,12 +7,12 @@ enum SoundEffect {
 }
 
 message PlayMusicReq {
-	string game_id;
-	SoundEffect effect;
+	string game_id = 1;
+	SoundEffect effect = 2;
 }
 
 message PlayMusicResp {
-	repeated byte opus_payload;
+	bytes opus_payload = 1;
 }
 
 service MusicService {
