@@ -8,8 +8,12 @@ message GenerateFrameReq {
 
 	Pos bird_position;
 
+	// The clouds should be fixed and part of the background
 	repeated Pos pipe_positions;
-	repeated Pos cloud_pos;
+
+	// Please consult the world generator for what this means
+	repeated int32 pipe_starts;
+	repeated int32 pipe_gaps;	
 
 	int32 score;
 }
