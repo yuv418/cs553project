@@ -1,0 +1,14 @@
+enum AuthStatus {
+	ACCEPT = 0;
+	REJECT = 1;
+}
+
+message AuthReq {
+	string username;
+	string password;
+}
+
+message AuthResp {
+	AuthStatus status;
+	optional string jwt;
+}
