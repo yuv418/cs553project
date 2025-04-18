@@ -45,3 +45,13 @@ The model returned the following blurb, and the complete game code.
 >
 >Game Over Screen
 >Displays final score and best score, with an option to restart instantly.
+
+## Generating protos
+
+For the services, run:
+
+`protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative backend/protos/auth.proto`
+
+For the client, run:
+
+`npx buf generate`

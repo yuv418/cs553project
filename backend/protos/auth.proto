@@ -1,14 +1,17 @@
-enum AuthStatus {
-	ACCEPT = 0;
-	REJECT = 1;
+syntax = "proto3";
+package auth;
+option go_package = ".;authpb";
+
+message AuthRequest {
+  string username = 1;
+  string password = 2;
 }
 
-message AuthReq {
-	string username;
-	string password;
+message AuthResponse {
+  string jwt_token = 1;
 }
 
-message AuthResp {
-	AuthStatus status;
-	optional string jwt;
+service AuthService {
+  // Authenticates a user and returns a JWT.
+  rpc Authenticate(AuthRequest) returns (AuthResponse);
 }
