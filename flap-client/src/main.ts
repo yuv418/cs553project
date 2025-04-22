@@ -1,8 +1,64 @@
-import './style.css'
+import './style.css';
+import { createConnectTransport } from "@connectrpc/connect-web";
+import { AuthService } from './gen/auth/auth_pb';
+import { createClient } from "@connectrpc/connect";
+import { jwtDecode } from "jwt-decode";
+
+interface JWTPayload {
+    sub?: string;
+    username?: string;
+    exp: number;
+}
+
+const transport = createConnectTransport({
+    baseUrl: import.meta.env.VITE_AUTH_SERVICE_URL,
+    useBinaryFormat: true,
+});
+
+const client = createClient(AuthService, transport);
+
+document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const username = (document.getElementById('username') as HTMLInputElement).value;
+    const password = (document.getElementById('password') as HTMLInputElement).value;
+    const errorDiv = document.getElementById('error-message');
+    
+    try {
+        const response = await client.authenticate({
+            username,
+            password
+        });
+          if (response.jwtToken) {
+            // Store the JWT token
+            localStorage.setItem('auth_token', response.jwtToken);
+            
+            // Decode the JWT token
+            const decoded = jwtDecode<JWTPayload>(response.jwtToken);
+            const username = decoded.sub || decoded.username;
+            
+            // Hide the login form and show welcome message
+            const loginContainer = document.querySelector('.login-container');
+            if (loginContainer) {
+                loginContainer.innerHTML = `
+                    <div class="welcome-message">
+                        <h2>Welcome, ${username}!</h2>
+                        <p>You have successfully logged in.</p>
+                    </div>
+                `;
+            }
+        } else {
+            if (errorDiv) errorDiv.textContent = 'Authentication failed';
+        }
+    } catch (error) {
+        console.error('Authentication error:', error);
+        if (errorDiv) errorDiv.textContent = 'Authentication failed. Please try again.';
+    }
+});
 
 const connectToWebTransport = async () => {
     try {
-        const url = 'https://localhost:4433/webtransport';
+        const url = import.meta.env.VITE_WEBTRANSPORT_URL;
         const transport = new WebTransport(url);
 
         await transport.ready;
@@ -36,5 +92,3 @@ const connectToWebTransport = async () => {
         console.error('Error with WebTransport:', error);
     }
 };
-
-connectToWebTransport();

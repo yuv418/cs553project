@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = ".;authpb";
+
+// The request message containing user credentials (simplified).
+message AuthRequest {
+  string user_id = 1; // In a real scenario, might be username/password, etc.
+}
+
+// The response message containing the JWT.
+message AuthResponse {
+  string jwt_token = 1;
+}
+
+// The authentication service definition.
+service AuthService {
+  // Authenticates a user and returns a JWT.
+  rpc Authenticate(AuthRequest) returns (AuthResponse);
+}

@@ -9,7 +9,7 @@ message AuthRequest {
 }
 
 message AuthResponse {
-  optional string jwt_token = 1;
+  string jwt_token = 1; // Remove optional since Connect handles nullability differently
 }
 
 service AuthService {

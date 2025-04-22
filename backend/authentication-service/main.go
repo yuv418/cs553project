@@ -13,18 +13,17 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
+	"net/http"
 	"os"
 	"sync"
 	"time"
 
-	authpb "github.com/yuv418/cs553project/backend/protos/auth"
-
+	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/status"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+
+	authpb "github.com/yuv418/cs553project/backend/protos/auth"
 )
 
 // UserCredentials holds username and encrypted password.
@@ -47,8 +46,8 @@ func LoadConfig() (*Config, error) {
 	cfg := &Config{}
 
 	flag.StringVar(&cfg.ListenAddr, "addr", getEnv("AUTH_LISTEN_ADDR", ":50051"), "gRPC server listen address")
-	flag.StringVar(&cfg.CertFile, "cert", getEnv("AUTH_CERT_FILE", "../transport-server-demo/cert.pem"), "TLS certificate file path") // Default relative path
-	flag.StringVar(&cfg.KeyFile, "key", getEnv("AUTH_KEY_FILE", "../transport-server-demo/key.pem"), "TLS key file path")             // Default relative path
+	flag.StringVar(&cfg.CertFile, "cert", getEnv("AUTH_CERT_FILE", "../../transport-server-demo/cert.pem"), "TLS certificate file path") // Default relative path
+	flag.StringVar(&cfg.KeyFile, "key", getEnv("AUTH_KEY_FILE", "../../transport-server-demo/key.pem"), "TLS key file path")             // Default relative path
 	flag.StringVar(&cfg.JWTSecret, "jwt-secret", getEnv("AUTH_JWT_SECRET", "your-super-secret-key"), "Secret key for signing JWTs and encrypting passwords")
 	flag.StringVar(&cfg.UserFile, "user-file", getEnv("AUTH_USER_FILE", "users.json"), "Path to the static user credentials file")
 	tokenExpiryStr := flag.String("token-expiry", getEnv("AUTH_TOKEN_EXPIRY", "1h"), "JWT token expiry duration (e.g., 1h, 15m)")
@@ -139,19 +138,18 @@ func decrypt(ciphertextBase64 string, key []byte) ([]byte, error) {
 	return plaintext, nil
 }
 
-type authServer struct {
-	authpb.UnimplementedAuthServiceServer
+type AuthServer struct {
 	jwtSecret      []byte
-	encryptionKey  []byte // Derived key for AES
+	encryptionKey  []byte
 	tokenExpiry    time.Duration
-	userStore      map[string]string // username -> encrypted password
+	userStore      map[string]string
 	userStoreMutex sync.RWMutex
 	userFilePath   string
 }
 
-func NewAuthServer(jwtSecret string, tokenExpiry time.Duration, userFilePath string) (*authServer, error) {
+func NewAuthServer(jwtSecret string, tokenExpiry time.Duration, userFilePath string) (*AuthServer, error) {
 	encryptionKey := deriveEncryptionKey(jwtSecret)
-	server := &authServer{
+	server := &AuthServer{
 		jwtSecret:     []byte(jwtSecret),
 		encryptionKey: encryptionKey,
 		tokenExpiry:   tokenExpiry,
@@ -159,16 +157,55 @@ func NewAuthServer(jwtSecret string, tokenExpiry time.Duration, userFilePath str
 		userFilePath:  userFilePath,
 	}
 	err := server.loadUsers()
-	if err != nil && !os.IsNotExist(err) { // Ignore "file not found" on initial load
+	if err != nil && !os.IsNotExist(err) {
 		return nil, fmt.Errorf("failed to load users: %w", err)
 	} else if os.IsNotExist(err) {
 		log.Printf("User file '%s' not found. Will create if users are added.", userFilePath)
-		server.addUser("admin", "password") // Example
+		server.addUser("admin", "password")
 	}
 	return server, nil
 }
 
-func (s *authServer) loadUsers() error {
+func (s *AuthServer) Authenticate(ctx context.Context, c *connect.Request[authpb.AuthRequest]) (*connect.Response[authpb.AuthResponse], error) {
+	if c.Msg.Username == "" || c.Msg.Password == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("username and password cannot be empty"))
+	}
+
+	s.userStoreMutex.RLock()
+	encryptedPassword, exists := s.userStore[c.Msg.Username]
+	s.userStoreMutex.RUnlock()
+
+	if !exists {
+		return nil, connect.NewError(connect.CodeUnauthenticated, fmt.Errorf("invalid username or password"))
+	}
+
+	storedPasswordBytes, err := decrypt(encryptedPassword, s.encryptionKey)
+	if err != nil {
+		log.Printf("Failed to decrypt password for user '%s': %v", c.Msg.Username, err)
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("authentication processing error"))
+	}
+
+	if string(storedPasswordBytes) != c.Msg.Password {
+		return nil, connect.NewError(connect.CodeUnauthenticated, fmt.Errorf("invalid username or password"))
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"username": c.Msg.Username,
+		"exp":      time.Now().Add(s.tokenExpiry).Unix(),
+	})
+
+	tokenString, err := token.SignedString(s.jwtSecret)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to generate token"))
+	}
+
+	response := &authpb.AuthResponse{}
+	response.JwtToken = tokenString
+
+	return connect.NewResponse(response), nil
+}
+
+func (s *AuthServer) loadUsers() error {
 	s.userStoreMutex.Lock()
 	defer s.userStoreMutex.Unlock()
 
@@ -196,7 +233,7 @@ func (s *authServer) loadUsers() error {
 	return nil
 }
 
-func (s *authServer) addUser(username, password string) error {
+func (s *AuthServer) addUser(username, password string) error {
 	s.userStoreMutex.Lock()
 	defer s.userStoreMutex.Unlock()
 
@@ -215,7 +252,7 @@ func (s *authServer) addUser(username, password string) error {
 	return s.saveUsers()
 }
 
-func (s *authServer) saveUsers() error {
+func (s *AuthServer) saveUsers() error {
 	var users []UserCredentials
 	for uname, encPass := range s.userStore {
 		users = append(users, UserCredentials{Username: uname, EncryptedPassword: encPass})
@@ -234,100 +271,71 @@ func (s *authServer) saveUsers() error {
 	return nil
 }
 
-// Authenticate handles authentication requests and generates JWTs.
-func (s *authServer) Authenticate(ctx context.Context, req *authpb.AuthRequest) (*authpb.AuthResponse, error) {
-	log.Printf("Authenticate request received for username: %s", req.Username)
-
-	if req.Username == "" || req.Password == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "username and password cannot be empty")
-	}
-
-	s.userStoreMutex.RLock()
-	encryptedPassword, ok := s.userStore[req.Username]
-	s.userStoreMutex.RUnlock()
-
-	if !ok {
-		log.Printf("Authentication failed: username '%s' not found", req.Username)
-		return nil, status.Errorf(codes.Unauthenticated, "invalid username or password")
-	}
-
-	decryptedPasswordBytes, err := decrypt(encryptedPassword, s.encryptionKey)
-	if err != nil {
-		log.Printf("Authentication failed: could not decrypt password for user '%s': %v", req.Username, err)
-		return nil, status.Errorf(codes.Internal, "authentication processing error")
-	}
-	decryptedPassword := string(decryptedPasswordBytes)
-
-	if req.Password != decryptedPassword {
-		log.Printf("Authentication failed: incorrect password for username '%s'", req.Username)
-		return nil, status.Errorf(codes.Unauthenticated, "invalid username or password")
-	}
-
-	// Generate JWT
-	now := time.Now()
-	claims := jwt.RegisteredClaims{
-		Subject:   req.Username,
-		IssuedAt:  jwt.NewNumericDate(now),
-		ExpiresAt: jwt.NewNumericDate(now.Add(s.tokenExpiry)),
-		Issuer:    "authentication-service",
-		// 'aud': []string{"service1", "service2"},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString(s.jwtSecret)
-	if err != nil {
-		log.Printf("Error signing JWT for user '%s': %v", req.Username, err)
-		return nil, status.Errorf(codes.Internal, "failed to generate token")
-	}
-
-	log.Printf("Generated JWT for username: %s", req.Username)
-	return &authpb.AuthResponse{JwtToken: signedToken}, nil
-}
-
 func main() {
-	log.Println("Starting Authentication Service...")
-
 	cfg, err := LoadConfig()
 	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		log.Fatal(err)
 	}
 
-	log.Printf("Configuration loaded:")
-	log.Printf("  Listen Address: %s", cfg.ListenAddr)
-	log.Printf("  TLS Cert File: %s", cfg.CertFile)
-	log.Printf("  TLS Key File: %s", cfg.KeyFile)
-	log.Printf("  User File: %s", cfg.UserFile)
-	log.Printf("  Token Expiry: %s", cfg.TokenExpiry)
-	log.Printf("  JWT Secret: <hidden>")
-
-	certificate, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
-	if err != nil {
-		log.Fatalf("Failed to load TLS key pair: %v", err)
-	}
-
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{certificate},
-		MinVersion:   tls.VersionTLS12,
-	}
-
-	opts := []grpc.ServerOption{
-		grpc.Creds(credentials.NewTLS(tlsConfig)),
-	}
-	grpcServer := grpc.NewServer(opts...)
-
-	authSrv, err := NewAuthServer(cfg.JWTSecret, cfg.TokenExpiry, cfg.UserFile)
+	authServer, err := NewAuthServer(cfg.JWTSecret, cfg.TokenExpiry, cfg.UserFile)
 	if err != nil {
 		log.Fatalf("Failed to create auth server: %v", err)
 	}
-	authpb.RegisterAuthServiceServer(grpcServer, authSrv)
 
-	lis, err := net.Listen("tcp", cfg.ListenAddr)
-	if err != nil {
-		log.Fatalf("Failed to listen on %s: %v", cfg.ListenAddr, err)
+	mux := http.NewServeMux()
+	mux.Handle("/auth.AuthService/", connect.NewUnaryHandler(
+		"/auth.AuthService/Authenticate",
+		authServer.Authenticate,
+		connect.WithInterceptors(
+			connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
+				return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+					log.Printf("Request: %s", req.Spec().Procedure)
+					return next(ctx, req)
+				}
+			}),
+		),
+	))
+
+	corsHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization, Connect-Protocol-Version")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		mux.ServeHTTP(w, r)
+	})
+
+	var server *http.Server
+	if cfg.CertFile != "" && cfg.KeyFile != "" {
+		cert, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
+		if err != nil {
+			log.Fatalf("Failed to load TLS certificates: %v", err)
+		}
+
+		server = &http.Server{
+			Addr:    cfg.ListenAddr,
+			Handler: corsHandler,
+			TLSConfig: &tls.Config{
+				Certificates: []tls.Certificate{cert},
+				MinVersion:   tls.VersionTLS12,
+			},
+		}
+	} else {
+		server = &http.Server{
+			Addr:    cfg.ListenAddr,
+			Handler: h2c.NewHandler(corsHandler, &http2.Server{}),
+		}
 	}
-	log.Printf("gRPC server listening securely on %s", cfg.ListenAddr)
 
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve gRPC: %v", err)
+	log.Printf("Starting Connect server on %s", cfg.ListenAddr)
+	if cfg.CertFile != "" && cfg.KeyFile != "" {
+		log.Fatal(server.ListenAndServeTLS(cfg.CertFile, cfg.KeyFile))
+	} else {
+		log.Fatal(server.ListenAndServe())
 	}
 }
