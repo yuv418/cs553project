@@ -1,12 +1,12 @@
 syntax = "proto3";
-message StartGameReq {
-	string jwt = 1;
-}
 
-message StartGameResp {
-	string game_id = 1;
-}
+package initiator;
+option go_package = "./;initiator_svc";
+
+message StartGameReq { string jwt = 1; }
+
+message StartGameResp { string game_id = 1; }
 
 service InitiatorService {
-	rpc StartGame(StartGameReq) returns (StartGameResp) {}
+    rpc StartGame(StartGameReq) returns (StartGameResp) {}
 }

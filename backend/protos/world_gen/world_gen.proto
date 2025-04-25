@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package world_gen;
+option go_package = "./;world_gen_svc";
+
+message WorldGenReq { string game_id = 1; }
+
+message PipeSpec {
+    int32 pipe_gap = 1;
+    int32 pipe_start = 2;
+    //  |      |
+    //  |      |
+    //  |      |
+    //  |      |  <- Pipe start
+    //                  |
+    //                  |
+    //                  |    -> gap
+    //                  |
+    //                  |
+    //  |      | <- Pipe start + pipe gap
+    //  |      |
+    //  |      |
+    //  |      |
+}
+
+message WorldGenerated {
+    // Spacing between pipes on x axis
+    int32 pipe_spacing = 1;
+    repeated PipeSpec pipe_specs = 2;
+}
+
+service WorldGeneratorService {
+    rpc GenerateWorld(WorldGenReq) returns (WorldGenerated) {};
+}

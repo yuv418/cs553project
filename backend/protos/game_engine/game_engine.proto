@@ -2,17 +2,20 @@ syntax = "proto3";
 
 import "google/protobuf/empty.proto";
 
+package game_engine;
+option go_package = "./;game_engine_svc";
+
 enum Key {
-	SPACE = 0;
+    SPACE = 0;
 }
 
 message GameEngineReq {
-	string jwt = 1;
-	int32 game_id = 2;
-	Key key = 3;
+    string jwt = 1;
+    int32 game_id = 2;
+    Key key = 3;
 }
 
 // Won't do anything on failure other than reject the requests.
 service InputService {
-	rpc GetFeature(GameEngineReq) returns (google.protobuf.Empty) {};
+    rpc GetFeature(GameEngineReq) returns (google.protobuf.Empty) {};
 }
