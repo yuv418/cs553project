@@ -3,7 +3,11 @@ syntax = "proto3";
 package initiator;
 option go_package = "./;initiatorpb";
 
-message StartGameReq { string jwt = 1; }
+message StartGameReq {
+    string jwt = 1;
+    int32 viewport_width = 2;
+    int32 viewport_height = 3;
+}
 
 message StartGameResp { string game_id = 1; }
 

@@ -3,26 +3,31 @@ syntax = "proto3";
 package world_gen;
 option go_package = "./;worldgenpb";
 
-message WorldGenReq { string game_id = 1; }
+message WorldGenReq {
+    string game_id = 1;
+    int32 viewport_width = 2;
+    int32 viewport_height = 3;
+}
 
 message PipeSpec {
-    int32 pipe_gap = 1;
-    int32 pipe_start = 2;
+    int32 gap_start = 1;
+    int32 gap_height = 2;
     //  |      |
     //  |      |
     //  |      |
-    //  |      |  <- Pipe start
+    //  |      |  <- Gap start
     //                  |
     //                  |
-    //                  |    -> gap
+    //                  |    -> gap height
     //                  |
     //                  |
-    //  |      | <- Pipe start + pipe gap
+    //  |      | <- gap start + gap height
     //  |      |
     //  |      |
     //  |      |
 }
 
+// Everything here is in terms of percentages
 message WorldGenerated {
     // Spacing between pipes on x axis
     int32 pipe_spacing = 1;
