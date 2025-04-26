@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package world_gen;
-option go_package = "./;worldgenpb";
+option go_package = "github.com/yuv418/cs553project/backend/protos/world_gen";
 
 message WorldGenReq {
     string game_id = 1;
