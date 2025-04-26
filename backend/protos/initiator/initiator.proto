@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package initiator;
-option go_package = "./;initiator_svc";
+option go_package = "./;initiatorpb";
 
 message StartGameReq { string jwt = 1; }
 

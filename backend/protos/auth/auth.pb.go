@@ -4,7 +4,7 @@
 // 	protoc        v6.30.1
 // source: protos/auth/auth.proto
 
-package auth_svc
+package authpb
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -128,7 +128,7 @@ const file_protos_auth_auth_proto_rawDesc = "" +
 	"\fAuthResponse\x12\x1b\n" +
 	"\tjwt_token\x18\x01 \x01(\tR\bjwtToken2D\n" +
 	"\vAuthService\x125\n" +
-	"\fAuthenticate\x12\x11.auth.AuthRequest\x1a\x12.auth.AuthResponseB\rZ\v./;auth_svcb\x06proto3"
+	"\fAuthenticate\x12\x11.auth.AuthRequest\x1a\x12.auth.AuthResponseB\vZ\t./;authpbb\x06proto3"
 
 var (
 	file_protos_auth_auth_proto_rawDescOnce sync.Once

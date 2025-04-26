@@ -4,7 +4,7 @@
 // - protoc             v6.30.1
 // source: protos/auth/auth.proto
 
-package auth_svc
+package authpb
 
 import (
 	context "context"

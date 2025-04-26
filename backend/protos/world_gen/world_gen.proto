@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package world_gen;
-option go_package = "./;world_gen_svc";
+option go_package = "./;worldgenpb";
 
 message WorldGenReq { string game_id = 1; }
 

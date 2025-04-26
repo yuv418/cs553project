@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package frame_gen;
 
-option go_package = "./;frame_gen_svc";
+option go_package = "./;framegenpb";
 
 message Pos {
     int32 x = 1;

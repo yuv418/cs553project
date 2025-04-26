@@ -23,7 +23,7 @@ import (
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 
-	auth_svc "github.com/yuv418/cs553project/backend/protos/auth"
+	authpb "github.com/yuv418/cs553project/backend/protos/auth"
 )
 
 // UserCredentials holds username and encrypted password.
@@ -166,7 +166,7 @@ func NewAuthServer(jwtSecret string, tokenExpiry time.Duration, userFilePath str
 	return server, nil
 }
 
-func (s *AuthServer) Authenticate(ctx context.Context, c *connect.Request[auth_svc.AuthRequest]) (*connect.Response[auth_svc.AuthResponse], error) {
+func (s *AuthServer) Authenticate(ctx context.Context, c *connect.Request[authpb.AuthRequest]) (*connect.Response[authpb.AuthResponse], error) {
 	if c.Msg.Username == "" || c.Msg.Password == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("username and password cannot be empty"))
 	}
@@ -199,7 +199,7 @@ func (s *AuthServer) Authenticate(ctx context.Context, c *connect.Request[auth_s
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to generate token"))
 	}
 
-	response := &auth_svc.AuthResponse{}
+	response := &authpb.AuthResponse{}
 	response.JwtToken = tokenString
 
 	return connect.NewResponse(response), nil
