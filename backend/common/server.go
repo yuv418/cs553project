@@ -16,6 +16,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/quic-go/quic-go/http3"
 	"github.com/quic-go/webtransport-go"
+	"github.com/yuv418/cs553project/backend/commondata"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/protobuf/encoding/protodelim"
@@ -127,8 +128,11 @@ func NewCommonServer() *CommonServer {
 	return commonSrv
 }
 
-func (commonSrv *CommonServer) SetupWebTransport() {
+func SetupWebTransport(commonSrv *CommonServer) {
 	// https://gist.github.com/filewalkwithme/0199060b2cb5bbc478c5
+
+	log.Printf("Setting up web transport at %s\n", commonSrv.Cfg.WtpListenAddr)
+
 	commonSrv.wtpMux = http.NewServeMux()
 	commonSrv.wtpServer =
 		&webtransport.Server{
@@ -147,6 +151,7 @@ func (commonSrv *CommonServer) SetupWebTransport() {
 		}
 }
 
+// TODO: add auth
 // https://stackoverflow.com/questions/69573113/how-can-i-instantiate-a-non-nil-pointer-of-type-argument-with-generic-go/69575720#69575720
 // https://pkg.go.dev/bufio#Writer.Flush
 func AddWebTransportRoute[Req any, PtrReq interface {
@@ -158,9 +163,16 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 }](
 	commonSrv *CommonServer,
 	route string,
-	handlerFn func(*Req) (*Res, error),
+	handlerFn func(*commondata.ReqCtx, *Req) (*Res, error),
 ) {
-	commonSrv.mux.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
+
+	if commonSrv.wtpServer == nil {
+		SetupWebTransport(commonSrv)
+	}
+
+	log.Printf("(CALServer) Adding WebTransport route %s\n", route)
+
+	commonSrv.wtpMux.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
 		session, err := commonSrv.wtpServer.Upgrade(w, r)
 		if err != nil {
 			log.Printf("failed to upgrade: %v", err)
@@ -180,6 +192,7 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 					defer stream.Close()
 
 					buf := PtrReq(new(Req))
+					reqCtx := &commondata.ReqCtx{}
 
 					// https://pkg.go.dev/io#ByteScanner
 					byteReader := bufio.NewReader(stream)
@@ -187,7 +200,9 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 
 					for {
 						protodelim.UnmarshalFrom(byteReader, buf)
-						resp, err := handlerFn(buf)
+
+						// TODO add the header for JWT
+						resp, err := handlerFn(reqCtx, buf)
 						ptrResp := PtrRes(resp)
 
 						if err != nil {
