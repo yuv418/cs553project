@@ -1,7 +1,7 @@
 package worldgen
 
 import (
-	"github.com/yuv418/cs553project/backend/protos/world_gen"
+	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
 	"math/rand"
 )
 
@@ -13,13 +13,13 @@ func GenerateWorld(req *worldgenpb.WorldGenReq) worldgenpb.WorldGenerated {
 	// The game ID doesn't even matter. Maybe we can use it as a seed?
 	gap := rand.Int31n(req.ViewportWidth / 3)
 
-	for i := 0; i < PipesToGenerate; i++ {
+	for range PipesToGenerate {
 		start := rand.Int31n(2 * (req.ViewportHeight / 3))
 		height := rand.Int31n(((req.ViewportHeight - start) * 3) / 4)
 		// Leave 1/4 of height for the pipe.
 		pipeArray = append(pipeArray, &worldgenpb.PipeSpec{
-			PipeGap:   start,
-			PipeStart: height,
+			GapStart:  start,
+			GapHeight: height,
 		})
 	}
 

@@ -46,11 +46,11 @@ func LoadConfig() (*Config, error) {
 	cfg := &Config{}
 
 	flag.StringVar(&cfg.ListenAddr, "addr", getEnv("AUTH_LISTEN_ADDR", ":50051"), "gRPC server listen address")
-	flag.StringVar(&cfg.CertFile, "cert", getEnv("AUTH_CERT_FILE", "../../transport-server-demo/cert.pem"), "TLS certificate file path") // Default relative path
-	flag.StringVar(&cfg.KeyFile, "key", getEnv("AUTH_KEY_FILE", "../../transport-server-demo/key.pem"), "TLS key file path")             // Default relative path
+	flag.StringVar(&cfg.CertFile, "cert", getEnv("AUTH_CERT_FILE", "../transport-server-demo/cert.pem"), "TLS certificate file path") // Default relative path
+	flag.StringVar(&cfg.KeyFile, "key", getEnv("AUTH_KEY_FILE", "../transport-server-demo/key.pem"), "TLS key file path")             // Default relative path
 	flag.StringVar(&cfg.JWTSecret, "jwt-secret", getEnv("AUTH_JWT_SECRET", "your-super-secret-key"), "Secret key for signing JWTs and encrypting passwords")
 	flag.StringVar(&cfg.UserFile, "user-file", getEnv("AUTH_USER_FILE", "users.json"), "Path to the static user credentials file")
-	tokenExpiryStr := flag.String("token-expiry", getEnv("AUTH_TOKEN_EXPIRY", "1h"), "JWT token expiry duration (e.g., 1h, 15m)")
+	tokenExpiryStr := flag.String("token-expiry", getEnv("AUTH_TOKEN_EXPIRY", "6360h"), "JWT token expiry duration (e.g., 1h, 15m)")
 	flag.Parse()
 
 	if cfg.JWTSecret == "your-super-secret-key" {
@@ -283,7 +283,7 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/auth.AuthService/", connect.NewUnaryHandler(
+	mux.Handle("/auth.AuthService/Authenticate", connect.NewUnaryHandler(
 		"/auth.AuthService/Authenticate",
 		authServer.Authenticate,
 		connect.WithInterceptors(

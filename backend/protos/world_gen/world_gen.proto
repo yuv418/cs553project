@@ -34,6 +34,6 @@ message WorldGenerated {
     repeated PipeSpec pipe_specs = 2;
 }
 
-service WorldGeneratorService {
+service WorldGenService {
     rpc GenerateWorld(WorldGenReq) returns (WorldGenerated) {};
 }
