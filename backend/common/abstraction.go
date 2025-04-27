@@ -10,13 +10,9 @@ import (
 	"connectrpc.com/connect"
 
 	"github.com/yuv418/cs553project/backend/commondata"
-	engine "github.com/yuv418/cs553project/backend/game_engine"
-	worldgen "github.com/yuv418/cs553project/backend/world_gen"
 
-	enginepb "github.com/yuv418/cs553project/backend/protos/game_engine"
-	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
-
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type Action struct {
@@ -36,29 +32,35 @@ func GetMicroserviceStatus() bool {
 type AbstractionService struct {
 	url    string
 	prefix string
+	client *grpc.ClientConn
 }
 
 type AbstractionServer struct {
-	microservice  bool
+	Microservice  bool
 	dispatchTable map[string]Action
 	serviceData   map[string]AbstractionService
 	commonServer  *CommonServer
 }
 
 var AbsCtx = &AbstractionServer{
-	microservice: GetMicroserviceStatus(),
-	serviceData: map[string]AbstractionService{
-		"gameEngine": AbstractionService{
-			url:    os.Getenv("GAME_ENGINE_URL"),
-			prefix: "/game_engine.GameEngineService",
-		},
-		"worldGen": AbstractionService{
-			url:    os.Getenv("WORLD_GEN_URL"),
-			prefix: "/world_gen.WorldGenService",
-		},
-	},
+	Microservice:  GetMicroserviceStatus(),
+	serviceData:   make(map[string]AbstractionService),
 	dispatchTable: make(map[string]Action),
 	commonServer:  NewCommonServer(),
+}
+
+func InsertServiceData(absCtx *AbstractionServer, key string, url string, prefix string) error {
+	client, err := grpc.NewClient(url, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return err
+	}
+	absCtx.serviceData[key] = AbstractionService{
+		url:    url,
+		client: client,
+		prefix: prefix,
+	}
+
+	return nil
 }
 
 // TODO: set up web server as well.
@@ -68,39 +70,61 @@ func InsertDispatchTable[ReqT any, RespT any](
 	verb string,
 	handlerFn any,
 	shouldVerifyJwt bool,
-) {
+) error {
+	svcData := absCtx.serviceData[svcName]
 	absCtx.dispatchTable[verb] = Action{
 		verb:    verb,
 		svcName: svcName,
 		fn:      handlerFn,
 	}
 
-	route := absCtx.serviceData[svcName].prefix + "/" + verb
+	// TODO dry
+	route := svcData.prefix + "/" + verb
 	log.Println("(CAL) Adding route ", route)
 
 	AddRoute(absCtx.commonServer, route,
 		func(ctx context.Context, req *connect.Request[ReqT]) (*connect.Response[RespT], error) {
-			return connect.NewResponse((handlerFn.(func(*commondata.ReqCtx, *ReqT) *RespT))(&commondata.ReqCtx{HttpCtx: &ctx}, req.Msg)), nil
+			resp, err := (handlerFn.(func(*commondata.ReqCtx, *ReqT) (*RespT, error)))(&commondata.ReqCtx{HttpCtx: &ctx}, req.Msg)
+
+			if err != nil {
+				return nil, err
+			} else {
+				return connect.NewResponse(resp), nil
+
+			}
 		}, shouldVerifyJwt)
+
+	return nil
 }
 
 func Dispatch[Req any, Resp any](ctx *commondata.ReqCtx, verb string, req *Req) (*Resp, error) {
-	var empty Resp
-	if AbsCtx.microservice {
-		// STUB
-		return &empty, nil
+	// https://sahansera.dev/building-grpc-client-go/
+	if AbsCtx.Microservice {
+		// https://pkg.go.dev/google.golang.org/grpc#ClientConn.Invoke
+		// Adapted from protobuf generated svcs
+		dispatchTableData := AbsCtx.dispatchTable[verb]
+		svcData := AbsCtx.serviceData[dispatchTableData.svcName]
+		client := svcData.client
+
+		// https://www.freecodecamp.org/news/new-vs-make-functions-in-go/
+		// https://chatgpt.com/share/680de978-f87c-8012-bd76-a8a6ae618438
+		resp := new(Resp)
+		err := client.Invoke(context.Background(), svcData.prefix+"/"+dispatchTableData.verb, req, resp)
+		if err != nil {
+			return nil, err
+		} else {
+			return resp, nil
+		}
 
 	} else {
-		return (AbsCtx.dispatchTable[verb].fn.(func(*commondata.ReqCtx, *Req) *Resp)(ctx, req)), nil
+		// Dispatch some stuff
+		returnedResp, err := (AbsCtx.dispatchTable[verb].fn.(func(*commondata.ReqCtx, *Req) (*Resp, error))(ctx, req))
+		if err != nil {
+			return nil, err
+		} else {
+			return returnedResp, nil
+		}
 	}
-}
-
-func (absCtx *AbstractionServer) SetupMonolithDispatchTable() {
-	// Any internal microservice functions don't have to be validated.
-	InsertDispatchTable[enginepb.GameEngineStartReq, emptypb.Empty](absCtx, "gameEngine", "StartGame", engine.StartGame, false)
-	InsertDispatchTable[enginepb.GameEngineInputReq, emptypb.Empty](absCtx, "gameEngine", "HandleInput", engine.HandleInput, true)
-
-	InsertDispatchTable[worldgenpb.WorldGenReq, worldgenpb.WorldGenerated](absCtx, "worldGen", "GenerateWorld", worldgen.GenerateWorld, false)
 }
 
 func (absCtx *AbstractionServer) Run() {

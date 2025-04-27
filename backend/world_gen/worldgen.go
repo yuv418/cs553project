@@ -7,9 +7,9 @@ import (
 	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
 )
 
-const PipesToGenerate int = 10000
+const PipesToGenerate int = 10
 
-func GenerateWorld(ctx *commondata.ReqCtx, req *worldgenpb.WorldGenReq) *worldgenpb.WorldGenerated {
+func GenerateWorld(ctx *commondata.ReqCtx, req *worldgenpb.WorldGenReq) (*worldgenpb.WorldGenerated, error) {
 	var pipeArray []*worldgenpb.PipeSpec
 
 	// The game ID doesn't even matter. Maybe we can use it as a seed?
@@ -28,6 +28,6 @@ func GenerateWorld(ctx *commondata.ReqCtx, req *worldgenpb.WorldGenReq) *worldge
 	return &worldgenpb.WorldGenerated{
 		PipeSpacing: gap,
 		PipeSpecs:   pipeArray,
-	}
+	}, nil
 
 }

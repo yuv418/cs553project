@@ -13,20 +13,20 @@ enum Key {
 
 message GameEngineInputReq {
     string jwt = 1;
-    int32 game_id = 2;
+    string game_id = 2;
     Key key = 3;
 }
 
 message GameEngineStartReq {
     string jwt = 1;
-    int32 game_id = 2;
+    string game_id = 2;
     int32 viewport_width = 3;
     int32 viewport_height = 4;
     world_gen.WorldGenerated world = 5;
 }
 
 // Won't do anything on failure other than reject the requests.
-service InputService {
+service GameEngineService {
     rpc HandleInput(GameEngineInputReq) returns (google.protobuf.Empty) {};
     rpc StartGame(GameEngineStartReq) returns (google.protobuf.Empty) {};
 }

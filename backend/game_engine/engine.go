@@ -4,9 +4,11 @@ package engine
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"sync"
 
+	"github.com/yuv418/cs553project/backend/common"
 	"github.com/yuv418/cs553project/backend/commondata"
 	enginepb "github.com/yuv418/cs553project/backend/protos/game_engine"
 	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
@@ -25,7 +27,7 @@ type IndividualGameState struct {
 }
 
 type GameState struct {
-	individualStateMap map[int32]IndividualGameState
+	individualStateMap map[string]IndividualGameState
 }
 
 var (
@@ -35,12 +37,12 @@ var (
 
 func MakeGameState() *GameState {
 	state := &GameState{}
-	state.individualStateMap = make(map[int32]IndividualGameState)
+	state.individualStateMap = make(map[string]IndividualGameState)
 
 	return state
 }
 
-func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) *emptypb.Empty {
+func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*emptypb.Empty, error) {
 	GlobalStateLock.Lock()
 
 	GlobalState.individualStateMap[req.GameId] = IndividualGameState{
@@ -57,10 +59,18 @@ func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) *emptyp
 
 	GlobalStateLock.Unlock()
 
-	return &emptypb.Empty{}
+	return &emptypb.Empty{}, nil
 }
 
-func HandleInput(ctx *commondata.ReqCtx, inp *enginepb.GameEngineInputReq) *emptypb.Empty {
+func HandleInput(ctx *commondata.ReqCtx, inp *enginepb.GameEngineInputReq) (*emptypb.Empty, error) {
+	resp, _ := common.Dispatch[worldgenpb.WorldGenReq, worldgenpb.WorldGenerated](ctx, "GenerateWorld", &worldgenpb.WorldGenReq{
+		GameId:         "idk",
+		ViewportWidth:  598,
+		ViewportHeight: 448,
+	})
+
+	log.Printf("Generated world %v\n", resp)
+
 	switch inp.Key {
 	case enginepb.Key_SPACE:
 		GlobalStateLock.Lock()
@@ -72,5 +82,5 @@ func HandleInput(ctx *commondata.ReqCtx, inp *enginepb.GameEngineInputReq) *empt
 		break
 	}
 
-	return &emptypb.Empty{}
+	return &emptypb.Empty{}, nil
 }
