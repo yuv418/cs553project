@@ -4,6 +4,7 @@ package common
 
 import (
 	"context"
+	"crypto/tls"
 	"log"
 	"os"
 
@@ -12,7 +13,7 @@ import (
 	"github.com/yuv418/cs553project/backend/commondata"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 )
 
 type Action struct {
@@ -50,9 +51,18 @@ var AbsCtx = &AbstractionServer{
 }
 
 func InsertServiceData(absCtx *AbstractionServer, key string, url string, prefix string) error {
-	client, err := grpc.NewClient(url, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// https://stackoverflow.com/questions/57278822/sending-grpc-communications-over-a-specific-port
+	// https://gist.github.com/marzocchi/c4d3e2254853c5ff02b420044e796aea
+	creds := credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})
+	client, err := grpc.NewClient(
+		url,
+		grpc.WithTransportCredentials(creds),
+	)
 	if err != nil {
+		log.Fatalf("Couldn't add client for microservice with url %s, got error %s\n", url, err)
 		return err
+	} else {
+		log.Printf("Established client for %s at url %s\n", key, url)
 	}
 	absCtx.serviceData[key] = AbstractionService{
 		url:    url,
@@ -109,8 +119,13 @@ func Dispatch[Req any, Resp any](ctx *commondata.ReqCtx, verb string, req *Req) 
 		// https://www.freecodecamp.org/news/new-vs-make-functions-in-go/
 		// https://chatgpt.com/share/680de978-f87c-8012-bd76-a8a6ae618438
 		resp := new(Resp)
-		err := client.Invoke(context.Background(), svcData.prefix+"/"+dispatchTableData.verb, req, resp)
+		loc := svcData.url + svcData.prefix + "/" + dispatchTableData.verb
+		cOpts := append([]grpc.CallOption{grpc.StaticMethod()})
+		log.Printf("(CAL Dispatch) Invoking microservice request at %s\n", loc)
+
+		err := client.Invoke(context.Background(), loc, req, resp, cOpts...)
 		if err != nil {
+			log.Printf("Request failed with %s\n", err)
 			return nil, err
 		} else {
 			return resp, nil
