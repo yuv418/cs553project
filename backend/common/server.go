@@ -1,6 +1,7 @@
 package common
 
 import (
+	"bufio"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -13,24 +14,32 @@ import (
 	"strings"
 
 	"connectrpc.com/connect"
+	"github.com/quic-go/quic-go/http3"
+	"github.com/quic-go/webtransport-go"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+	"google.golang.org/protobuf/encoding/protodelim"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // Goal: provide common scaffolding for starting a connect gRPC web server.
 // https://pkg.go.dev/connectrpc.com/connect#NewUnaryHandler
 
 type SrvCfg struct {
-	ListenAddr string
-	CertFile   string
-	KeyFile    string
-	JWTSecret  string
+	ListenAddr    string
+	WtpListenAddr string
+	CertFile      string
+	KeyFile       string
+	JWTSecret     string
 }
 
 type CommonServer struct {
-	mux    *http.ServeMux
-	server *http.Server
-	Cfg    *SrvCfg
+	mux       *http.ServeMux
+	wtpMux    *http.ServeMux
+	server    *http.Server
+	wtpServer *webtransport.Server
+	cert      tls.Certificate
+	Cfg       *SrvCfg
 }
 
 func getEnv(key, fallback string) string {
@@ -44,6 +53,7 @@ func LoadSrvCfg() (*SrvCfg, error) {
 	cfg := &SrvCfg{}
 
 	flag.StringVar(&cfg.ListenAddr, "addr", getEnv("AUTH_LISTEN_ADDR", ":50051"), "gRPC server listen address")
+	flag.StringVar(&cfg.WtpListenAddr, "wtp-addr", getEnv("AUTH_LISTEN_WTP_ADDR", ":4433"), "Webtransport server listen address")
 	flag.StringVar(&cfg.CertFile, "cert", getEnv("AUTH_CERT_FILE", "../transport-server-demo/cert.pem"), "TLS certificate file path") // Default relative path
 	flag.StringVar(&cfg.KeyFile, "key", getEnv("AUTH_KEY_FILE", "../transport-server-demo/key.pem"), "TLS key file path")             // Default relative path
 	flag.StringVar(&cfg.JWTSecret, "jwt-secret", getEnv("AUTH_JWT_SECRET", "your-super-secret-key"), "Secret key for signing JWTs and encrypting passwords")
@@ -91,16 +101,19 @@ func NewCommonServer() *CommonServer {
 		if err != nil {
 			log.Fatalf("Failed to load TLS certificates: %v", err)
 		}
+		commonSrv.cert = cert
 
 		commonSrv.server = &http.Server{
 			Addr:    cfg.ListenAddr,
 			Handler: corsHandler,
 			TLSConfig: &tls.Config{
-				Certificates: []tls.Certificate{cert},
+				Certificates: []tls.Certificate{commonSrv.cert},
 				MinVersion:   tls.VersionTLS12,
 			},
 		}
 	} else {
+		// Webtransport server will fail.
+
 		commonSrv.server = &http.Server{
 			Addr:    cfg.ListenAddr,
 			Handler: h2c.NewHandler(corsHandler, &http2.Server{}),
@@ -112,6 +125,87 @@ func NewCommonServer() *CommonServer {
 	})
 
 	return commonSrv
+}
+
+func (commonSrv *CommonServer) SetupWebTransport() {
+	// https://gist.github.com/filewalkwithme/0199060b2cb5bbc478c5
+	commonSrv.wtpMux = http.NewServeMux()
+	commonSrv.wtpServer =
+		&webtransport.Server{
+			H3: http3.Server{
+				Handler: commonSrv.wtpMux,
+				Addr:    commonSrv.Cfg.WtpListenAddr,
+				TLSConfig: &tls.Config{
+					Certificates: []tls.Certificate{commonSrv.cert},
+					NextProtos:   []string{"h3"},
+				},
+			},
+			CheckOrigin: func(r *http.Request) bool {
+				// Allow all origins for demo!
+				return true
+			},
+		}
+}
+
+// https://stackoverflow.com/questions/69573113/how-can-i-instantiate-a-non-nil-pointer-of-type-argument-with-generic-go/69575720#69575720
+// https://pkg.go.dev/bufio#Writer.Flush
+func AddWebTransportRoute[Req any, PtrReq interface {
+	ProtoReflect() protoreflect.Message
+	*Req
+}, Res any, PtrRes interface {
+	ProtoReflect() protoreflect.Message
+	*Res
+}](
+	commonSrv *CommonServer,
+	route string,
+	handlerFn func(*Req) (*Res, error),
+) {
+	commonSrv.mux.HandleFunc(route, func(w http.ResponseWriter, r *http.Request) {
+		session, err := commonSrv.wtpServer.Upgrade(w, r)
+		if err != nil {
+			log.Printf("failed to upgrade: %v", err)
+			http.Error(w, "failed to upgrade", http.StatusInternalServerError)
+			return
+		}
+		go (func(session *webtransport.Session) {
+			defer session.CloseWithError(0, "session closed")
+
+			for {
+				stream, err := session.AcceptStream(context.Background())
+				if err != nil {
+					log.Printf("failed to accept stream: %v", err)
+					return
+				}
+				go (func(stream webtransport.Stream) {
+					defer stream.Close()
+
+					buf := PtrReq(new(Req))
+
+					// https://pkg.go.dev/io#ByteScanner
+					byteReader := bufio.NewReader(stream)
+					byteWriter := bufio.NewWriter(stream)
+
+					for {
+						protodelim.UnmarshalFrom(byteReader, buf)
+						resp, err := handlerFn(buf)
+						ptrResp := PtrRes(resp)
+
+						if err != nil {
+							log.Printf("Handler for WebTransport failed! %s\n", err)
+						} else {
+							protodelim.MarshalTo(byteWriter, ptrResp)
+
+							// For latency reasons
+							byteWriter.Flush()
+						}
+
+					}
+
+				})(stream)
+			}
+
+		})(session)
+	})
 }
 
 func AddRoute[Req any, Res any](commonSrv *CommonServer, route string,
@@ -154,8 +248,14 @@ func AddRoute[Req any, Res any](commonSrv *CommonServer, route string,
 }
 
 func (commonSrv *CommonServer) StartServer() {
-	log.Printf("Starting Connect server on %s", commonSrv.Cfg.ListenAddr)
 	if commonSrv.Cfg.CertFile != "" && commonSrv.Cfg.KeyFile != "" {
+		if commonSrv.wtpServer != nil {
+			log.Printf("Starting WebTransport server at %s\n", commonSrv.Cfg.WtpListenAddr)
+			go (func() {
+				commonSrv.wtpServer.ListenAndServeTLS(commonSrv.Cfg.CertFile, commonSrv.Cfg.KeyFile)
+			})()
+		}
+		log.Printf("Starting Connect server on %s", commonSrv.Cfg.ListenAddr)
 		log.Fatal(commonSrv.server.ListenAndServeTLS(commonSrv.Cfg.CertFile, commonSrv.Cfg.KeyFile))
 	} else {
 		log.Fatal(commonSrv.server.ListenAndServe())
