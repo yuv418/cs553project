@@ -120,7 +120,7 @@ func Dispatch[Req any, Resp any](ctx *commondata.ReqCtx, verb string, req *Req) 
 		// https://chatgpt.com/share/680de978-f87c-8012-bd76-a8a6ae618438
 		resp := new(Resp)
 		loc := svcData.prefix + "/" + dispatchTableData.verb
-		log.Printf("(CAL Dispatch) Invoking microservice request at %s\n", loc)
+		log.Printf("(CAL Dispatch) Invoking microservice request on %s at %s\n", svcData.url, loc)
 
 		err := client.Invoke(context.Background(), loc, req, resp)
 		if err != nil {
