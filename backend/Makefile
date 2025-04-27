@@ -4,8 +4,8 @@ monolith: auth.proto game_engine.proto world_gen.proto frame_gen.proto initiator
 worldgen: world_gen.proto
 	go build -tags worldgen -o ./out/worldgen ./bins
 
-auth_svc: auth.proto
-	go build -o ./out ./authentication-service
+auth: auth.proto
+	go build -tags auth -o ./out/auth ./bins
 
 protos: auth.proto game_engine.proto world_gen.proto frame_gen.proto initiator.proto music.proto
 
