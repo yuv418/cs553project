@@ -2,7 +2,7 @@ package common
 
 import (
 	"fmt"
-	"os"
+	"log"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -17,11 +17,12 @@ func (cfg *SrvCfg) ValidateJwt(jwtToken string) bool {
 			return nil, fmt.Errorf("Couldn't sign using %v", t.Header["alg"])
 		}
 
-		return cfg.JWTSecret, nil
+		// Convert JWTSecret to byte[]
+		return []byte(cfg.JWTSecret), nil
 	})
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse your jwt with error %v\n", err)
+		log.Printf("Failed to parse your jwt with error %v\n", err)
 		return false
 	}
 

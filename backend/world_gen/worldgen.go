@@ -7,7 +7,7 @@ import (
 
 const PipesToGenerate int = 10000
 
-func GenerateWorld(req *worldgenpb.WorldGenReq) worldgenpb.WorldGenerated {
+func GenerateWorld(req *worldgenpb.WorldGenReq) *worldgenpb.WorldGenerated {
 	var pipeArray []*worldgenpb.PipeSpec
 
 	// The game ID doesn't even matter. Maybe we can use it as a seed?
@@ -23,7 +23,7 @@ func GenerateWorld(req *worldgenpb.WorldGenReq) worldgenpb.WorldGenerated {
 		})
 	}
 
-	return worldgenpb.WorldGenerated{
+	return &worldgenpb.WorldGenerated{
 		PipeSpacing: gap,
 		PipeSpecs:   pipeArray,
 	}
