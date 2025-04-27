@@ -1,4 +1,4 @@
-package main
+package worldgen
 
 import (
 	"github.com/yuv418/cs553project/backend/protos/world_gen"

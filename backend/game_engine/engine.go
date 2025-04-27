@@ -1,4 +1,4 @@
-package main
+package engine
 
 // https://stackoverflow.com/questions/29721449/how-can-i-print-to-stderr-in-go-without-using-log
 

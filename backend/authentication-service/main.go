@@ -289,7 +289,9 @@ func main() {
 		connect.WithInterceptors(
 			connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
 				return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+					// TODO validate auth here
 					log.Printf("Request: %s", req.Spec().Procedure)
+
 					return next(ctx, req)
 				}
 			}),
