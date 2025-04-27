@@ -40,14 +40,14 @@ type AbstractionServer struct {
 	Microservice  bool
 	dispatchTable map[string]Action
 	serviceData   map[string]AbstractionService
-	commonServer  *CommonServer
+	CommonServer  *CommonServer
 }
 
 var AbsCtx = &AbstractionServer{
 	Microservice:  GetMicroserviceStatus(),
 	serviceData:   make(map[string]AbstractionService),
 	dispatchTable: make(map[string]Action),
-	commonServer:  NewCommonServer(),
+	CommonServer:  NewCommonServer(),
 }
 
 func InsertServiceData(absCtx *AbstractionServer, key string, url string, prefix string) error {
@@ -92,7 +92,7 @@ func InsertDispatchTable[ReqT any, RespT any](
 	route := svcData.prefix + "/" + verb
 	log.Println("(CAL) Adding route ", route)
 
-	AddRoute(absCtx.commonServer, route,
+	AddRoute(absCtx.CommonServer, route,
 		func(ctx context.Context, req *connect.Request[ReqT]) (*connect.Response[RespT], error) {
 			resp, err := (handlerFn.(func(*commondata.ReqCtx, *ReqT) (*RespT, error)))(&commondata.ReqCtx{HttpCtx: &ctx}, req.Msg)
 
@@ -142,5 +142,5 @@ func Dispatch[Req any, Resp any](ctx *commondata.ReqCtx, verb string, req *Req) 
 }
 
 func (absCtx *AbstractionServer) Run() {
-	absCtx.commonServer.StartServer()
+	absCtx.CommonServer.StartServer()
 }

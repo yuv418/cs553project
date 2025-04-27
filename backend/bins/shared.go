@@ -1,23 +1,43 @@
 package main
 
 import (
+	"log"
 	"os"
 
+	auth "github.com/yuv418/cs553project/backend/auth"
 	engine "github.com/yuv418/cs553project/backend/game_engine"
 	worldgen "github.com/yuv418/cs553project/backend/world_gen"
 
 	abstraction "github.com/yuv418/cs553project/backend/common"
+	authpb "github.com/yuv418/cs553project/backend/protos/auth"
 	enginepb "github.com/yuv418/cs553project/backend/protos/game_engine"
 	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
-func SetupWorldgenTables() {
+func SetupAuthTables(ctx *abstraction.AbstractionServer) {
+	cfg, err := auth.LoadAuthConfig()
+	if err != nil {
+		log.Fatalf("Auth failed with %s\n", err)
+	}
+
+	authServer, err := auth.NewAuthServer(ctx.CommonServer.Cfg.JWTSecret, cfg.TokenExpiry, cfg.UserFile)
+
+	if err != nil {
+		log.Fatalf("Failed to create auth server: %v", err)
+	}
+
+	abstraction.InsertServiceData(abstraction.AbsCtx, "auth", os.Getenv("AUTH_URL"), "/auth.AuthService")
+	abstraction.InsertDispatchTable[authpb.AuthRequest, authpb.AuthResponse](abstraction.AbsCtx, "auth", "Authenticate", authServer.Authenticate, false)
+
+}
+
+func SetupWorldgenTables(ctx *abstraction.AbstractionServer) {
 	abstraction.InsertServiceData(abstraction.AbsCtx, "worldGen", os.Getenv("WORLD_GEN_URL"), "/world_gen.WorldGenService")
 	abstraction.InsertDispatchTable[worldgenpb.WorldGenReq, worldgenpb.WorldGenerated](abstraction.AbsCtx, "worldGen", "GenerateWorld", worldgen.GenerateWorld, false)
 }
 
-func SetupGameEngineTables() {
+func SetupGameEngineTables(ctx *abstraction.AbstractionServer) {
 	abstraction.InsertServiceData(abstraction.AbsCtx, "gameEngine", os.Getenv("GAME_ENGINE_URL"), "/game_engine.GameEngineService")
 
 	// Any internal microservice functions don't have to be validated.

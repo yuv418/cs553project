@@ -9,7 +9,7 @@ import (
 func main() {
 	log.Printf("Microservices is set to %v\n", abstraction.AbsCtx.Microservice)
 
-	SetupTables()
+	SetupTables(abstraction.AbsCtx)
 
 	abstraction.AbsCtx.Run()
 }

@@ -1,28 +1,23 @@
-package main
+package auth
 
 import (
-	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
-	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"os"
 	"sync"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 
+	"github.com/yuv418/cs553project/backend/commondata"
 	authpb "github.com/yuv418/cs553project/backend/protos/auth"
 )
 
@@ -33,43 +28,9 @@ type UserCredentials struct {
 }
 
 // Config holds server configuration.
-type Config struct {
-	ListenAddr  string
-	CertFile    string
-	KeyFile     string
-	JWTSecret   string
+type AuthConfig struct {
 	TokenExpiry time.Duration
 	UserFile    string // Path to the static user file
-}
-
-func LoadConfig() (*Config, error) {
-	cfg := &Config{}
-
-	flag.StringVar(&cfg.ListenAddr, "addr", getEnv("AUTH_LISTEN_ADDR", ":50051"), "gRPC server listen address")
-	flag.StringVar(&cfg.CertFile, "cert", getEnv("AUTH_CERT_FILE", "../transport-server-demo/cert.pem"), "TLS certificate file path") // Default relative path
-	flag.StringVar(&cfg.KeyFile, "key", getEnv("AUTH_KEY_FILE", "../transport-server-demo/key.pem"), "TLS key file path")             // Default relative path
-	flag.StringVar(&cfg.JWTSecret, "jwt-secret", getEnv("AUTH_JWT_SECRET", "your-super-secret-key"), "Secret key for signing JWTs and encrypting passwords")
-	flag.StringVar(&cfg.UserFile, "user-file", getEnv("AUTH_USER_FILE", "users.json"), "Path to the static user credentials file")
-	tokenExpiryStr := flag.String("token-expiry", getEnv("AUTH_TOKEN_EXPIRY", "6360h"), "JWT token expiry duration (e.g., 1h, 15m)")
-	flag.Parse()
-
-	if cfg.JWTSecret == "your-super-secret-key" {
-		log.Println("Warning: Using default JWT secret. Set AUTH_JWT_SECRET environment variable or --jwt-secret flag for production.")
-	}
-	if _, err := os.Stat(cfg.CertFile); os.IsNotExist(err) {
-		return nil, fmt.Errorf("TLS cert file not found: %s. Set AUTH_CERT_FILE or --cert flag", cfg.CertFile)
-	}
-	if _, err := os.Stat(cfg.KeyFile); os.IsNotExist(err) {
-		return nil, fmt.Errorf("TLS key file not found: %s. Set AUTH_KEY_FILE or --key flag", cfg.KeyFile)
-	}
-
-	expiry, err := time.ParseDuration(*tokenExpiryStr)
-	if err != nil {
-		return nil, fmt.Errorf("invalid token expiry duration '%s': %w", *tokenExpiryStr, err)
-	}
-	cfg.TokenExpiry = expiry
-
-	return cfg, nil
 }
 
 func getEnv(key, fallback string) string {
@@ -166,13 +127,13 @@ func NewAuthServer(jwtSecret string, tokenExpiry time.Duration, userFilePath str
 	return server, nil
 }
 
-func (s *AuthServer) Authenticate(ctx context.Context, c *connect.Request[authpb.AuthRequest]) (*connect.Response[authpb.AuthResponse], error) {
-	if c.Msg.Username == "" || c.Msg.Password == "" {
+func (s *AuthServer) Authenticate(ctx *commondata.ReqCtx, c *authpb.AuthRequest) (*authpb.AuthResponse, error) {
+	if c.Username == "" || c.Password == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("username and password cannot be empty"))
 	}
 
 	s.userStoreMutex.RLock()
-	encryptedPassword, exists := s.userStore[c.Msg.Username]
+	encryptedPassword, exists := s.userStore[c.Username]
 	s.userStoreMutex.RUnlock()
 
 	if !exists {
@@ -181,16 +142,16 @@ func (s *AuthServer) Authenticate(ctx context.Context, c *connect.Request[authpb
 
 	storedPasswordBytes, err := decrypt(encryptedPassword, s.encryptionKey)
 	if err != nil {
-		log.Printf("Failed to decrypt password for user '%s': %v", c.Msg.Username, err)
+		log.Printf("Failed to decrypt password for user '%s': %v", c.Username, err)
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("authentication processing error"))
 	}
 
-	if string(storedPasswordBytes) != c.Msg.Password {
+	if string(storedPasswordBytes) != c.Password {
 		return nil, connect.NewError(connect.CodeUnauthenticated, fmt.Errorf("invalid username or password"))
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"username": c.Msg.Username,
+		"username": c.Username,
 		"exp":      time.Now().Add(s.tokenExpiry).Unix(),
 	})
 
@@ -202,7 +163,7 @@ func (s *AuthServer) Authenticate(ctx context.Context, c *connect.Request[authpb
 	response := &authpb.AuthResponse{}
 	response.JwtToken = tokenString
 
-	return connect.NewResponse(response), nil
+	return response, nil
 }
 
 func (s *AuthServer) loadUsers() error {
@@ -271,73 +232,20 @@ func (s *AuthServer) saveUsers() error {
 	return nil
 }
 
+func LoadAuthConfig() (*AuthConfig, error) {
+	cfg := &AuthConfig{}
+
+	cfg.UserFile = getEnv("AUTH_USER_FILE", "users.json")
+	tokenExpiryStr := getEnv("AUTH_TOKEN_EXPIRY", "6360h")
+
+	expiry, err := time.ParseDuration(tokenExpiryStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid token expiry duration '%s': %w", tokenExpiryStr, err)
+	}
+	cfg.TokenExpiry = expiry
+
+	return cfg, nil
+}
+
 func main() {
-	cfg, err := LoadConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	authServer, err := NewAuthServer(cfg.JWTSecret, cfg.TokenExpiry, cfg.UserFile)
-	if err != nil {
-		log.Fatalf("Failed to create auth server: %v", err)
-	}
-
-	mux := http.NewServeMux()
-	mux.Handle("/auth.AuthService/Authenticate", connect.NewUnaryHandler(
-		"/auth.AuthService/Authenticate",
-		authServer.Authenticate,
-		connect.WithInterceptors(
-			connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
-				return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-					// TODO validate auth here
-					log.Printf("Request: %s", req.Spec().Procedure)
-
-					return next(ctx, req)
-				}
-			}),
-		),
-	))
-
-	corsHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization, Connect-Protocol-Version")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		mux.ServeHTTP(w, r)
-	})
-
-	var server *http.Server
-	if cfg.CertFile != "" && cfg.KeyFile != "" {
-		cert, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
-		if err != nil {
-			log.Fatalf("Failed to load TLS certificates: %v", err)
-		}
-
-		server = &http.Server{
-			Addr:    cfg.ListenAddr,
-			Handler: corsHandler,
-			TLSConfig: &tls.Config{
-				Certificates: []tls.Certificate{cert},
-				MinVersion:   tls.VersionTLS12,
-			},
-		}
-	} else {
-		server = &http.Server{
-			Addr:    cfg.ListenAddr,
-			Handler: h2c.NewHandler(corsHandler, &http2.Server{}),
-		}
-	}
-
-	log.Printf("Starting Connect server on %s", cfg.ListenAddr)
-	if cfg.CertFile != "" && cfg.KeyFile != "" {
-		log.Fatal(server.ListenAndServeTLS(cfg.CertFile, cfg.KeyFile))
-	} else {
-		log.Fatal(server.ListenAndServe())
-	}
 }

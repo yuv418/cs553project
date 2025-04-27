@@ -30,7 +30,7 @@ type SrvCfg struct {
 type CommonServer struct {
 	mux    *http.ServeMux
 	server *http.Server
-	cfg    *SrvCfg
+	Cfg    *SrvCfg
 }
 
 func getEnv(key, fallback string) string {
@@ -68,12 +68,12 @@ func NewCommonServer() *CommonServer {
 	if err != nil {
 		log.Fatal(err)
 	}
-	commonSrv.cfg = cfg
+	commonSrv.Cfg = cfg
 
 	commonSrv.mux = http.NewServeMux()
 
 	corsHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", commonSrv.cfg.ListenAddr)
+		w.Header().Set("Access-Control-Allow-Origin", commonSrv.Cfg.ListenAddr)
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization, Connect-Protocol-Version")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -134,7 +134,7 @@ func AddRoute[Req any, Res any](commonSrv *CommonServer, route string,
 						auth, ok := req.Header()["Authorization"]
 						if ok && strings.HasPrefix(auth[0], "Bearer") {
 							jwt := strings.Split(auth[0], " ")[1]
-							if commonSrv.cfg.ValidateJwt(jwt) {
+							if commonSrv.Cfg.ValidateJwt(jwt) {
 								return next(ctx, req)
 							}
 						}
@@ -154,9 +154,9 @@ func AddRoute[Req any, Res any](commonSrv *CommonServer, route string,
 }
 
 func (commonSrv *CommonServer) StartServer() {
-	log.Printf("Starting Connect server on %s", commonSrv.cfg.ListenAddr)
-	if commonSrv.cfg.CertFile != "" && commonSrv.cfg.KeyFile != "" {
-		log.Fatal(commonSrv.server.ListenAndServeTLS(commonSrv.cfg.CertFile, commonSrv.cfg.KeyFile))
+	log.Printf("Starting Connect server on %s", commonSrv.Cfg.ListenAddr)
+	if commonSrv.Cfg.CertFile != "" && commonSrv.Cfg.KeyFile != "" {
+		log.Fatal(commonSrv.server.ListenAndServeTLS(commonSrv.Cfg.CertFile, commonSrv.Cfg.KeyFile))
 	} else {
 		log.Fatal(commonSrv.server.ListenAndServe())
 	}
