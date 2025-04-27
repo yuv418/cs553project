@@ -63,6 +63,7 @@ func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*empty
 }
 
 func HandleInput(ctx *commondata.ReqCtx, inp *enginepb.GameEngineInputReq) (*emptypb.Empty, error) {
+	log.Printf("Got request params %v\n", inp)
 	resp, _ := common.Dispatch[worldgenpb.WorldGenReq, worldgenpb.WorldGenerated](ctx, "GenerateWorld", &worldgenpb.WorldGenReq{
 		GameId:         "idk",
 		ViewportWidth:  598,

@@ -1,8 +1,12 @@
 import './style.css';
 import { createConnectTransport } from "@connectrpc/connect-web";
-import { AuthService } from './gen/auth/auth_pb';
+import { AuthService } from './protos/auth/auth_pb';
+import * as engine from './protos/game_engine/game_engine_pb.js';
 import { createClient } from "@connectrpc/connect";
+import { create, toBinary } from "@bufbuild/protobuf"
+import { sizeDelimitedEncode, sizeDelimitedDecodeStream  } from "@bufbuild/protobuf/wire"
 import { jwtDecode } from "jwt-decode";
+import * as wkt  from "@bufbuild/protobuf/wkt";
 
 interface JWTPayload {
     sub?: string;
@@ -19,24 +23,24 @@ const client = createClient(AuthService, transport);
 
 document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const username = (document.getElementById('username') as HTMLInputElement).value;
     const password = (document.getElementById('password') as HTMLInputElement).value;
     const errorDiv = document.getElementById('error-message');
-    
+
     try {
         const response = await client.authenticate({
             username,
             password
         });
-          if (response.jwtToken) {
+        if (response.jwtToken) {
             // Store the JWT token
             localStorage.setItem('auth_token', response.jwtToken);
-            
+
             // Decode the JWT token
             const decoded = jwtDecode<JWTPayload>(response.jwtToken);
             const username = decoded.sub || decoded.username;
-            
+
             // Hide the login form and show welcome message
             const loginContainer = document.querySelector('.login-container');
             if (loginContainer) {
@@ -47,6 +51,8 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
                     </div>
                 `;
             }
+
+            await connectToWebTransport()
         } else {
             if (errorDiv) errorDiv.textContent = 'Authentication failed';
         }
@@ -56,7 +62,7 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     }
 });
 
-const connectToWebTransport = async () => {
+export const connectToWebTransport = async () => {
     try {
         const url = import.meta.env.VITE_WEBTRANSPORT_URL;
         const transport = new WebTransport(url);
@@ -66,19 +72,23 @@ const connectToWebTransport = async () => {
 
         const stream = await transport.createBidirectionalStream();
         const writer = stream.writable.getWriter();
-        const reader = stream.readable.getReader();
 
         // Send a message to the server
-        const encoder = new TextEncoder();
-        const message = 'Hello, server!';
-        await writer.write(encoder.encode(message));
-        console.log(`Sent: ${message}`);
+        const inputReq = create(engine.GameEngineInputReqSchema, {
+            gameId: "idk",
+            key: engine.Key.SPACE
+        })
+
+        const inputBin = sizeDelimitedEncode(engine.GameEngineInputReqSchema, inputReq)
+
+        await writer.write(inputBin);
+        console.log(`Sent: ${JSON.stringify(inputReq)}`);
 
         // Read a message from the server
-        const { value, done } = await reader.read();
-        if (!done) {
-            const decoder = new TextDecoder();
-            console.log(`Received: ${decoder.decode(value)}`);
+        // const { value, done } = await reader.read();
+        //
+        for await (const msg of sizeDelimitedDecodeStream(wkt.EmptySchema, stream.readable)) {
+            console.log(msg)
         }
 
         // Close the stream

@@ -59,10 +59,10 @@ func InsertServiceData(absCtx *AbstractionServer, key string, url string, prefix
 		grpc.WithTransportCredentials(creds),
 	)
 	if err != nil {
-		log.Fatalf("Couldn't add client for microservice with url %s, got error %s\n", url, err)
+		log.Fatalf("(CAL) Couldn't add client for microservice with url %s, got error %s\n", url, err)
 		return err
 	} else {
-		log.Printf("Established client for %s at url %s\n", key, url)
+		log.Printf("(CAL) Established client for %s at url %s\n", key, url)
 	}
 	absCtx.serviceData[key] = AbstractionService{
 		url:    url,

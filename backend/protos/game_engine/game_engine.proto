@@ -12,13 +12,11 @@ enum Key {
 }
 
 message GameEngineInputReq {
-    string jwt = 1;
     string game_id = 2;
     Key key = 3;
 }
 
 message GameEngineStartReq {
-    string jwt = 1;
     string game_id = 2;
     int32 viewport_width = 3;
     int32 viewport_height = 4;

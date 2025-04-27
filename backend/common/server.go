@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"html"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -84,7 +85,7 @@ func NewCommonServer() *CommonServer {
 	commonSrv.mux = http.NewServeMux()
 
 	corsHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", commonSrv.Cfg.ListenAddr)
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization, Connect-Protocol-Version")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -131,7 +132,7 @@ func NewCommonServer() *CommonServer {
 func SetupWebTransport(commonSrv *CommonServer) {
 	// https://gist.github.com/filewalkwithme/0199060b2cb5bbc478c5
 
-	log.Printf("Setting up web transport at %s\n", commonSrv.Cfg.WtpListenAddr)
+	log.Printf("(CALServer) Setting up web transport at %s\n", commonSrv.Cfg.WtpListenAddr)
 
 	commonSrv.wtpMux = http.NewServeMux()
 	commonSrv.wtpServer =
@@ -179,18 +180,21 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 			http.Error(w, "failed to upgrade", http.StatusInternalServerError)
 			return
 		}
+
+		log.Printf("Received a WebTransport Connection at %s\n", route)
 		go (func(session *webtransport.Session) {
 			defer session.CloseWithError(0, "session closed")
 
 			for {
 				stream, err := session.AcceptStream(context.Background())
 				if err != nil {
-					log.Printf("failed to accept stream: %v", err)
+					log.Printf("failed to accept stream: %s", err)
 					return
 				}
 				go (func(stream webtransport.Stream) {
 					defer stream.Close()
 
+					log.Printf("Beginning stream for connection\n")
 					buf := PtrReq(new(Req))
 					reqCtx := &commondata.ReqCtx{}
 
@@ -199,7 +203,16 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 					byteWriter := bufio.NewWriter(stream)
 
 					for {
-						protodelim.UnmarshalFrom(byteReader, buf)
+						err := protodelim.UnmarshalFrom(byteReader, buf)
+
+						if err != nil {
+							log.Printf("Failed to unmarshal protobuf %s\n", err)
+							// We closed the stream
+							if err == io.EOF {
+								return
+							}
+							continue
+						}
 
 						// TODO add the header for JWT
 						resp, err := handlerFn(reqCtx, buf)
