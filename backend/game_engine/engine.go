@@ -7,8 +7,10 @@ import (
 	"os"
 	"sync"
 
+	"github.com/yuv418/cs553project/backend/commondata"
 	enginepb "github.com/yuv418/cs553project/backend/protos/game_engine"
 	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type IndividualGameState struct {
@@ -38,7 +40,7 @@ func MakeGameState() *GameState {
 	return state
 }
 
-func StartGame(req *enginepb.GameEngineStartReq) {
+func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) *emptypb.Empty {
 	GlobalStateLock.Lock()
 
 	GlobalState.individualStateMap[req.GameId] = IndividualGameState{
@@ -54,9 +56,11 @@ func StartGame(req *enginepb.GameEngineStartReq) {
 	}
 
 	GlobalStateLock.Unlock()
+
+	return &emptypb.Empty{}
 }
 
-func HandleInput(inp *enginepb.GameEngineInputReq) {
+func HandleInput(ctx *commondata.ReqCtx, inp *enginepb.GameEngineInputReq) *emptypb.Empty {
 	switch inp.Key {
 	case enginepb.Key_SPACE:
 		GlobalStateLock.Lock()
@@ -67,4 +71,6 @@ func HandleInput(inp *enginepb.GameEngineInputReq) {
 		fmt.Fprintf(os.Stderr, "invalid key in Key enum %d\n", inp.Key)
 		break
 	}
+
+	return &emptypb.Empty{}
 }

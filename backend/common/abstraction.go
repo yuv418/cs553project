@@ -9,6 +9,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/yuv418/cs553project/backend/commondata"
 	engine "github.com/yuv418/cs553project/backend/game_engine"
 	worldgen "github.com/yuv418/cs553project/backend/world_gen"
 
@@ -44,22 +45,20 @@ type AbstractionServer struct {
 	commonServer  *CommonServer
 }
 
-func NewAbstractionServer() *AbstractionServer {
-	return &AbstractionServer{
-		microservice: GetMicroserviceStatus(),
-		serviceData: map[string]AbstractionService{
-			"gameEngine": AbstractionService{
-				url:    os.Getenv("GAME_ENGINE_URL"),
-				prefix: "/game_engine.GameEngineService",
-			},
-			"worldGen": AbstractionService{
-				url:    os.Getenv("WORLD_GEN_URL"),
-				prefix: "/world_gen.WorldGenService",
-			},
+var AbsCtx = &AbstractionServer{
+	microservice: GetMicroserviceStatus(),
+	serviceData: map[string]AbstractionService{
+		"gameEngine": AbstractionService{
+			url:    os.Getenv("GAME_ENGINE_URL"),
+			prefix: "/game_engine.GameEngineService",
 		},
-		dispatchTable: make(map[string]Action),
-		commonServer:  NewCommonServer(),
-	}
+		"worldGen": AbstractionService{
+			url:    os.Getenv("WORLD_GEN_URL"),
+			prefix: "/world_gen.WorldGenService",
+		},
+	},
+	dispatchTable: make(map[string]Action),
+	commonServer:  NewCommonServer(),
 }
 
 // TODO: set up web server as well.
@@ -68,6 +67,7 @@ func InsertDispatchTable[ReqT any, RespT any](
 	svcName string,
 	verb string,
 	handlerFn any,
+	shouldVerifyJwt bool,
 ) {
 	absCtx.dispatchTable[verb] = Action{
 		verb:    verb,
@@ -80,26 +80,27 @@ func InsertDispatchTable[ReqT any, RespT any](
 
 	AddRoute(absCtx.commonServer, route,
 		func(ctx context.Context, req *connect.Request[ReqT]) (*connect.Response[RespT], error) {
-			return connect.NewResponse((handlerFn.(func(*ReqT) *RespT))(req.Msg)), nil
-		})
+			return connect.NewResponse((handlerFn.(func(*commondata.ReqCtx, *ReqT) *RespT))(&commondata.ReqCtx{HttpCtx: &ctx}, req.Msg)), nil
+		}, shouldVerifyJwt)
 }
 
-func Dispatch[Req any, Resp any](absCtx *AbstractionServer, verb string, req *Req) (*Resp, error) {
+func Dispatch[Req any, Resp any](ctx *commondata.ReqCtx, verb string, req *Req) (*Resp, error) {
 	var empty Resp
-	if absCtx.microservice {
+	if AbsCtx.microservice {
 		// STUB
 		return &empty, nil
 
 	} else {
-		return (absCtx.dispatchTable[verb].fn.(func(*Req) *Resp)(req)), nil
+		return (AbsCtx.dispatchTable[verb].fn.(func(*commondata.ReqCtx, *Req) *Resp)(ctx, req)), nil
 	}
 }
 
 func (absCtx *AbstractionServer) SetupMonolithDispatchTable() {
-	InsertDispatchTable[enginepb.GameEngineStartReq, emptypb.Empty](absCtx, "gameEngine", "StartGame", engine.StartGame)
-	InsertDispatchTable[enginepb.GameEngineInputReq, emptypb.Empty](absCtx, "gameEngine", "HandleInput", engine.HandleInput)
+	// Any internal microservice functions don't have to be validated.
+	InsertDispatchTable[enginepb.GameEngineStartReq, emptypb.Empty](absCtx, "gameEngine", "StartGame", engine.StartGame, false)
+	InsertDispatchTable[enginepb.GameEngineInputReq, emptypb.Empty](absCtx, "gameEngine", "HandleInput", engine.HandleInput, true)
 
-	InsertDispatchTable[worldgenpb.WorldGenReq, worldgenpb.WorldGenerated](absCtx, "worldGen", "GenerateWorld", worldgen.GenerateWorld)
+	InsertDispatchTable[worldgenpb.WorldGenReq, worldgenpb.WorldGenerated](absCtx, "worldGen", "GenerateWorld", worldgen.GenerateWorld, false)
 }
 
 func (absCtx *AbstractionServer) Run() {

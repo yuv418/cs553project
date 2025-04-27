@@ -115,7 +115,8 @@ func NewCommonServer() *CommonServer {
 }
 
 func AddRoute[Req any, Res any](commonSrv *CommonServer, route string,
-	handlerFn func(context.Context, *connect.Request[Req]) (*connect.Response[Res], error)) {
+	handlerFn func(context.Context, *connect.Request[Req]) (*connect.Response[Res], error),
+	shouldVerifyJwt bool) {
 	commonSrv.mux.Handle(route, connect.NewUnaryHandler(
 		route,
 		handlerFn,
@@ -124,22 +125,27 @@ func AddRoute[Req any, Res any](commonSrv *CommonServer, route string,
 				return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 					log.Printf("Request: %s", req.Spec().Procedure)
 
-					// https://pkg.go.dev/net/http#Header
-					// https://www.reddit.com/r/golang/comments/cgbkel/why_are_headers_mapstringstring/
-					// https://pkg.go.dev/strings
-					// https://go.dev/doc/tutorial/handle-errors
+					if shouldVerifyJwt {
+						// https://pkg.go.dev/net/http#Header
+						// https://www.reddit.com/r/golang/comments/cgbkel/why_are_headers_mapstringstring/
+						// https://pkg.go.dev/strings
+						// https://go.dev/doc/tutorial/handle-errors
 
-					auth, ok := req.Header()["Authorization"]
-					if ok && strings.HasPrefix(auth[0], "Bearer") {
-						jwt := strings.Split(auth[0], " ")[1]
-						if commonSrv.cfg.ValidateJwt(jwt) {
-							return next(ctx, req)
+						auth, ok := req.Header()["Authorization"]
+						if ok && strings.HasPrefix(auth[0], "Bearer") {
+							jwt := strings.Split(auth[0], " ")[1]
+							if commonSrv.cfg.ValidateJwt(jwt) {
+								return next(ctx, req)
+							}
 						}
+
+						// Return unauthorized
+						// https://connectrpc.com/docs/go/errors/
+						return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("Missing or invalid JWT token"))
+					} else {
+						return next(ctx, req)
 					}
 
-					// Return unauthorized
-					// https://connectrpc.com/docs/go/errors/
-					return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("Missing or invalid JWT token"))
 				}
 			}),
 		),

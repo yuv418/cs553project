@@ -1,13 +1,15 @@
 package worldgen
 
 import (
-	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
 	"math/rand"
+
+	"github.com/yuv418/cs553project/backend/commondata"
+	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
 )
 
 const PipesToGenerate int = 10000
 
-func GenerateWorld(req *worldgenpb.WorldGenReq) *worldgenpb.WorldGenerated {
+func GenerateWorld(ctx *commondata.ReqCtx, req *worldgenpb.WorldGenReq) *worldgenpb.WorldGenerated {
 	var pipeArray []*worldgenpb.PipeSpec
 
 	// The game ID doesn't even matter. Maybe we can use it as a seed?

@@ -5,7 +5,6 @@ import (
 )
 
 func main() {
-	srv := abstraction.NewAbstractionServer()
-	srv.SetupMonolithDispatchTable()
-	srv.Run()
+	abstraction.AbsCtx.SetupMonolithDispatchTable()
+	abstraction.AbsCtx.Run()
 }
