@@ -3,6 +3,7 @@ package engine
 // https://stackoverflow.com/questions/29721449/how-can-i-print-to-stderr-in-go-without-using-log
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os"
@@ -62,7 +63,7 @@ func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*empty
 	return &emptypb.Empty{}, nil
 }
 
-func HandleInput(ctx *commondata.ReqCtx, inp *enginepb.GameEngineInputReq) (*emptypb.Empty, error) {
+func HandleInput(ctx *commondata.ReqCtx, transportWriter *bufio.Writer, inp *enginepb.GameEngineInputReq) (*emptypb.Empty, error) {
 	log.Printf("Got request params %v\n", inp)
 	resp, _ := common.Dispatch[worldgenpb.WorldGenReq, worldgenpb.WorldGenerated](ctx, "GenerateWorld", &worldgenpb.WorldGenReq{
 		GameId:         "idk",

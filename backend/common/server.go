@@ -152,6 +152,19 @@ func SetupWebTransport(commonSrv *CommonServer) {
 		}
 }
 
+func WebTransportSendBuf[Res any, PtrRes interface {
+	ProtoReflect() protoreflect.Message
+	*Res
+}](byteWriter *bufio.Writer, resp PtrRes) error {
+	ptrResp := PtrRes(resp)
+
+	protodelim.MarshalTo(byteWriter, ptrResp)
+
+	// For latency reasons
+	byteWriter.Flush()
+	return nil
+}
+
 // TODO: add auth
 // https://stackoverflow.com/questions/69573113/how-can-i-instantiate-a-non-nil-pointer-of-type-argument-with-generic-go/69575720#69575720
 // https://pkg.go.dev/bufio#Writer.Flush
@@ -164,7 +177,7 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 }](
 	commonSrv *CommonServer,
 	route string,
-	handlerFn func(*commondata.ReqCtx, *Req) (*Res, error),
+	handlerFn func(*commondata.ReqCtx, *bufio.Writer, *Req) (*Res, error),
 ) {
 
 	if commonSrv.wtpServer == nil {
@@ -215,16 +228,12 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 						}
 
 						// TODO add the header for JWT
-						resp, err := handlerFn(reqCtx, buf)
+						resp, err := handlerFn(reqCtx, byteWriter, buf)
 						ptrResp := PtrRes(resp)
-
 						if err != nil {
 							log.Printf("Handler for WebTransport failed! %s\n", err)
 						} else {
-							protodelim.MarshalTo(byteWriter, ptrResp)
-
-							// For latency reasons
-							byteWriter.Flush()
+							WebTransportSendBuf(byteWriter, ptrResp)
 						}
 
 					}
