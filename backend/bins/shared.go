@@ -6,11 +6,13 @@ import (
 
 	auth "github.com/yuv418/cs553project/backend/auth"
 	engine "github.com/yuv418/cs553project/backend/game_engine"
+	"github.com/yuv418/cs553project/backend/initiator"
 	worldgen "github.com/yuv418/cs553project/backend/world_gen"
 
 	abstraction "github.com/yuv418/cs553project/backend/common"
 	authpb "github.com/yuv418/cs553project/backend/protos/auth"
 	enginepb "github.com/yuv418/cs553project/backend/protos/game_engine"
+	initiatorpb "github.com/yuv418/cs553project/backend/protos/initiator"
 	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
@@ -30,6 +32,11 @@ func SetupAuthTables(ctx *abstraction.AbstractionServer) {
 	abstraction.InsertServiceData(abstraction.AbsCtx, "auth", os.Getenv("AUTH_URL"), "/auth.AuthService")
 	abstraction.InsertDispatchTable[authpb.AuthRequest, authpb.AuthResponse](abstraction.AbsCtx, "auth", "Authenticate", authServer.Authenticate, false)
 
+}
+
+func SetupInitiatorTables(ctx *abstraction.AbstractionServer) {
+	abstraction.InsertServiceData(abstraction.AbsCtx, "initiator", os.Getenv("INITIATOR_URL"), "/initiator.InitiatorService")
+	abstraction.InsertDispatchTable[initiatorpb.StartGameReq, initiatorpb.StartGameResp](abstraction.AbsCtx, "initiator", "StartGame", initiator.StartGame, true)
 }
 
 func SetupWorldgenTables(ctx *abstraction.AbstractionServer) {

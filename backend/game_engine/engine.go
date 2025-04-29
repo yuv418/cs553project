@@ -9,7 +9,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/yuv418/cs553project/backend/common"
 	"github.com/yuv418/cs553project/backend/commondata"
 	enginepb "github.com/yuv418/cs553project/backend/protos/game_engine"
 	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
@@ -89,14 +88,6 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 }
 
 func HandleInput(ctx *commondata.ReqCtx, inp *enginepb.GameEngineInputReq) (*emptypb.Empty, error) {
-	log.Printf("Got request params %v\n", inp)
-	resp, _ := common.Dispatch[worldgenpb.WorldGenReq, worldgenpb.WorldGenerated](ctx, "GenerateWorld", &worldgenpb.WorldGenReq{
-		GameId:         "idk",
-		ViewportWidth:  598,
-		ViewportHeight: 448,
-	})
-
-	log.Printf("Generated world %v\n", resp)
 
 	switch inp.Key {
 	case enginepb.Key_SPACE:
