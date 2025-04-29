@@ -52,7 +52,7 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
                 `;
             }
 
-            await connectToWebTransport()
+            await connectToWebTransport(response.jwtToken)
         } else {
             if (errorDiv) errorDiv.textContent = 'Authentication failed';
         }
@@ -62,9 +62,9 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     }
 });
 
-export const connectToWebTransport = async () => {
+export const connectToWebTransport = async (jwt) => {
     try {
-        const url = import.meta.env.VITE_WEBTRANSPORT_URL;
+        const url = import.meta.env.VITE_WEBTRANSPORT_URL + "?token=" + jwt;
         const transport = new WebTransport(url);
 
         await transport.ready;

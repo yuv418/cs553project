@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"connectrpc.com/connect"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/quic-go/quic-go/http3"
 	"github.com/quic-go/webtransport-go"
 	"github.com/yuv418/cs553project/backend/commondata"
@@ -194,6 +195,13 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 			http.Error(w, "failed to upgrade", http.StatusInternalServerError)
 			return
 		}
+		// https://stackoverflow.com/questions/15407719/in-gos-http-package-how-do-i-get-the-query-string-on-a-post-request
+		claims := ExtractVerifyJwt(commonSrv, r.URL.Query().Get("token"))
+		if claims == nil {
+			log.Printf("Invalid JWT for WebTransport launch")
+			http.Error(w, "Invalid JWT for WebTransport launch", http.StatusUnauthorized)
+			return
+		}
 
 		log.Printf("Received a WebTransport Connection at %s\n", route)
 		go (func(session *webtransport.Session) {
@@ -209,7 +217,7 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 
 					log.Printf("Beginning stream for connection\n")
 					buf := PtrReq(new(Req))
-					reqCtx := &commondata.ReqCtx{}
+					reqCtx := &commondata.ReqCtx{Username: claims["username"].(string)}
 
 					// https://pkg.go.dev/io#ByteScanner
 					byteReader := bufio.NewReader(stream)
@@ -247,6 +255,13 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 	})
 }
 
+func ExtractVerifyJwt(commonSrv *CommonServer, jwt string) jwt.MapClaims {
+	if claims := commonSrv.Cfg.ValidateJwt(jwt); claims != nil {
+		return claims
+	}
+	return nil
+}
+
 func AddRoute[Req any, Res any](commonSrv *CommonServer, route string,
 	handlerFn func(context.Context, *connect.Request[Req]) (*connect.Response[Res], error),
 	shouldVerifyJwt bool) {
@@ -264,11 +279,19 @@ func AddRoute[Req any, Res any](commonSrv *CommonServer, route string,
 						// https://pkg.go.dev/strings
 						// https://go.dev/doc/tutorial/handle-errors
 
+						// https://stackoverflow.com/questions/71114401/grpc-how-to-pass-value-from-interceptor-to-service-function
+						// https://chatgpt.com/share/6810f51b-79b8-8012-8ec9-4d526dd1c434
+
 						auth, ok := req.Header()["Authorization"]
+
 						if ok && strings.HasPrefix(auth[0], "Bearer") {
 							jwt := strings.Split(auth[0], " ")[1]
-							if commonSrv.Cfg.ValidateJwt(jwt) {
-								return next(ctx, req)
+							claims := ExtractVerifyJwt(commonSrv, jwt)
+							if claims != nil {
+								log.Printf("%v\n", claims)
+								reqCtx := context.WithValue(ctx, "claims", claims)
+								return next(reqCtx, req)
+
 							}
 						}
 

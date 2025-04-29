@@ -10,6 +10,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/yuv418/cs553project/backend/commondata"
 
 	"google.golang.org/grpc"
@@ -94,7 +95,16 @@ func InsertDispatchTable[ReqT any, RespT any](
 
 	AddRoute(absCtx.CommonServer, route,
 		func(ctx context.Context, req *connect.Request[ReqT]) (*connect.Response[RespT], error) {
-			resp, err := (handlerFn.(func(*commondata.ReqCtx, *ReqT) (*RespT, error)))(&commondata.ReqCtx{HttpCtx: &ctx}, req.Msg)
+			var username string
+			// Get username from ctx
+			claims := ctx.Value("claims")
+			if claims != nil {
+				username = claims.(jwt.MapClaims)["username"].(string)
+			}
+			resp, err := (handlerFn.(func(*commondata.ReqCtx, *ReqT) (*RespT, error)))(&commondata.ReqCtx{
+				HttpCtx:  &ctx,
+				Username: username,
+			}, req.Msg)
 
 			if err != nil {
 				return nil, err
