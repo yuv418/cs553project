@@ -31,10 +31,22 @@ type GameState struct {
 	individualStateMap map[string]IndividualGameState
 }
 
+type SessionState struct {
+	invidualSessionMap map[string]*bufio.Writer
+}
+
 var (
-	GlobalState     = MakeGameState()
-	GlobalStateLock = sync.Mutex{}
+	GlobalSessionState = MakeSessionState()
+	GlobalState        = MakeGameState()
+	GlobalStateLock    = sync.Mutex{}
 )
+
+func MakeSessionState() *SessionState {
+	state := &SessionState{
+		invidualSessionMap: make(map[string]*bufio.Writer),
+	}
+	return state
+}
 
 func MakeGameState() *GameState {
 	state := &GameState{}
@@ -58,12 +70,24 @@ func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*empty
 		groundX: 0,
 	}
 
+	// Start game loop
+
 	GlobalStateLock.Unlock()
 
 	return &emptypb.Empty{}, nil
 }
 
-func HandleInput(ctx *commondata.ReqCtx, transportWriter *bufio.Writer, inp *enginepb.GameEngineInputReq) (*emptypb.Empty, error) {
+func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Writer) error {
+	GlobalStateLock.Lock()
+
+	GlobalSessionState.invidualSessionMap[ctx.Username] = transportWriter
+
+	GlobalStateLock.Unlock()
+
+	return nil
+}
+
+func HandleInput(ctx *commondata.ReqCtx, inp *enginepb.GameEngineInputReq) (*emptypb.Empty, error) {
 	log.Printf("Got request params %v\n", inp)
 	resp, _ := common.Dispatch[worldgenpb.WorldGenReq, worldgenpb.WorldGenerated](ctx, "GenerateWorld", &worldgenpb.WorldGenReq{
 		GameId:         "idk",

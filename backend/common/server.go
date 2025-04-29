@@ -177,7 +177,8 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 }](
 	commonSrv *CommonServer,
 	route string,
-	handlerFn func(*commondata.ReqCtx, *bufio.Writer, *Req) (*Res, error),
+	handlerFn func(*commondata.ReqCtx, *Req) (*Res, error),
+	insertWebTransport func(*commondata.ReqCtx, *bufio.Writer) error,
 ) {
 
 	if commonSrv.wtpServer == nil {
@@ -205,7 +206,6 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 					return
 				}
 				go (func(stream webtransport.Stream) {
-					defer stream.Close()
 
 					log.Printf("Beginning stream for connection\n")
 					buf := PtrReq(new(Req))
@@ -214,6 +214,8 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 					// https://pkg.go.dev/io#ByteScanner
 					byteReader := bufio.NewReader(stream)
 					byteWriter := bufio.NewWriter(stream)
+
+					insertWebTransport(reqCtx, byteWriter)
 
 					for {
 						err := protodelim.UnmarshalFrom(byteReader, buf)
@@ -228,7 +230,7 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 						}
 
 						// TODO add the header for JWT
-						resp, err := handlerFn(reqCtx, byteWriter, buf)
+						resp, err := handlerFn(reqCtx, buf)
 						ptrResp := PtrRes(resp)
 						if err != nil {
 							log.Printf("Handler for WebTransport failed! %s\n", err)
