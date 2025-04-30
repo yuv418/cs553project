@@ -77,7 +77,8 @@ func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*empty
 }
 
 func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Writer) error {
-	log.Printf("EstablishGameWebTransport: user ID is " + ctx.Username)
+	log.Printf("EstablishGameWebTransport: user ID is %s\n", ctx.Username)
+
 	GlobalStateLock.Lock()
 
 	GlobalSessionState.invidualSessionMap[ctx.Username] = transportWriter
@@ -88,6 +89,7 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 }
 
 func HandleInput(ctx *commondata.ReqCtx, inp *enginepb.GameEngineInputReq) (*emptypb.Empty, error) {
+	log.Printf("Username in HandleInput is %s\n", ctx.Username)
 
 	switch inp.Key {
 	case enginepb.Key_SPACE:

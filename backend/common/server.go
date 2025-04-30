@@ -229,12 +229,13 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 						err := protodelim.UnmarshalFrom(byteReader, buf)
 
 						if err != nil {
-							log.Printf("Failed to unmarshal protobuf %s\n", err)
+							log.Printf("Failed to unmarshal protobuf, returning %s\n", err)
 							// We closed the stream
 							if err == io.EOF {
 								return
+							} else {
+								return
 							}
-							continue
 						}
 
 						// TODO add the header for JWT

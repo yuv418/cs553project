@@ -1,3 +1,4 @@
 *.pb.go
 out/*
 users.json
+flap-client/.env
