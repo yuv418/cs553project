@@ -15,7 +15,7 @@ message GenerateFrameReq {
     Pos bird_position = 2;
 
     // The clouds should be fixed and part of the background
-    repeated Pos pipe_positions = 3;
+    repeated double pipe_positions = 3;
 
     // Please consult the world generator for what this means
     repeated double pipe_starts = 4;

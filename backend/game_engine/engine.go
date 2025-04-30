@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"sync"
 	"time"
@@ -33,7 +34,6 @@ const (
 const (
 	groundHeight = 112
 	pipeWidth    = 52
-	pipeGap      = 90 // Gap between upper and lower pipe
 	gravity      = 0.25
 	flapStrength = 4.6
 	maxPipeSpeed = 5
@@ -53,7 +53,11 @@ type IndividualGameState struct {
 	// Full height/Y
 	pipeWindowX     float64
 	pipeWindowWidth float64
-	pipesToRender   int32
+	pipesToRender   int
+	pipeStartOffset float64
+	pipeStarts      []float64
+	pipePositions   []float64
+	pipeGaps        []float64
 }
 
 type GameState struct {
@@ -88,7 +92,7 @@ func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*empty
 	GlobalStateLock.Lock()
 
 	// TODO: Validate that the game ID doesn't already exist.
-	GlobalState.individualStateMap[req.GameId] = &IndividualGameState{
+	game := &IndividualGameState{
 		birdY:        200,
 		birdVelocity: 0,
 		flapForce:    float64(req.ViewportHeight) / 10,
@@ -99,10 +103,13 @@ func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*empty
 		// TODO maybe remove this
 		groundX:         0,
 		pipeSpeed:       2,
-		pipeWindowX:     float64(req.World.PipeSpacing) * 1.5,
+		pipeWindowX:     0,
 		pipeWindowWidth: float64(req.ViewportWidth),
-		pipesToRender:   req.ViewportWidth / (pipeWidth + int32(req.World.PipeSpacing)),
+		pipesToRender:   int(req.ViewportWidth) / (pipeWidth + int(req.World.PipeSpacing)),
+		pipeStartOffset: float64(req.World.PipeSpacing) * 1.5,
 	}
+
+	GlobalState.individualStateMap[req.GameId] = game
 
 	GlobalStateLock.Unlock()
 
@@ -125,12 +132,19 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 
 		timer := time.NewTicker((1000 / frameRate) * time.Millisecond)
 		quit := make(chan struct{})
+		GlobalStateLock.Lock()
+		pipesToRender := GlobalState.individualStateMap[gameId].pipesToRender
+		GlobalStateLock.Unlock()
+
 		frameUpdate := &framegenpb.GenerateFrameReq{
 			GameId:    gameId,
 			PipeWidth: pipeWidth,
 			BirdPosition: &framegenpb.Pos{
 				X: birdX,
 			},
+			PipePositions: make([]float64, pipesToRender, pipesToRender),
+			PipeStarts:    make([]float64, pipesToRender, pipesToRender),
+			PipeGaps:      make([]float64, pipesToRender, pipesToRender),
 		}
 
 		for {
@@ -152,7 +166,26 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 				// Advance the pipe window
 				statePtr.pipeWindowX += statePtr.pipeSpeed
 
+				advanceAmt := pipeWidth + statePtr.world.PipeSpacing
 				// Render the pipes
+				for i := range statePtr.pipesToRender {
+					// Find the closest pipe to
+					// pipeWindowX + (i*advanceAmt)
+
+					closestPipe := 0
+
+					if statePtr.pipeWindowX > statePtr.world.PipeSpacing {
+						adj := (statePtr.pipeWindowX - statePtr.world.PipeSpacing)
+						closestPipe = int(math.Ceil(adj / advanceAmt))
+					}
+
+					closestPipePos := (float64(closestPipe) * advanceAmt) + statePtr.pipeStartOffset
+
+					frameUpdate.PipePositions[i] = closestPipePos - statePtr.pipeWindowX
+					frameUpdate.PipeGaps[i] = statePtr.world.PipeSpecs[i].GapHeight
+					frameUpdate.PipeStarts[i] = statePtr.world.PipeSpecs[i].GapStart
+
+				}
 
 				statePtr.score++
 				// Increase difficulty slightly
