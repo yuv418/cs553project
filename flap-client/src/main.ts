@@ -124,22 +124,6 @@ async function startGame(response: AuthResponse) {
     }
 }
 
-function animateBird() {
-    if (!bird) return;
-    const birdY = parseFloat(bird.style.top) || 0;
-    if (lastBirdY !== null) {
-        if (birdY < lastBirdY) {
-            // Bird is moving up
-            bird.style.backgroundImage = `url(${birdSprites.up})`;
-        } else if (birdY > lastBirdY) {
-            // Bird is moving down
-            bird.style.backgroundImage = `url(${birdSprites.down})`;
-        }
-    }
-    lastBirdY = birdY;
-    animationFrameId = requestAnimationFrame(animateBird);
-}
-
 function updateBirdPosition(y: number) {
     if (!bird) return;
     

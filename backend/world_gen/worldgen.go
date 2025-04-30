@@ -24,13 +24,13 @@ func GenerateWorld(ctx *commondata.ReqCtx, req *worldgenpb.WorldGenReq) (*worldg
 		height := rand.Int31n(((req.ViewportHeight - start) * 3) / 4)
 		// Leave 1/4 of height for the pipe.
 		pipeArray = append(pipeArray, &worldgenpb.PipeSpec{
-			GapStart:  start,
-			GapHeight: height,
+			GapStart:  float64(start),
+			GapHeight: float64(height),
 		})
 	}
 
 	return &worldgenpb.WorldGenerated{
-		PipeSpacing: gap,
+		PipeSpacing: float64(gap),
 		PipeSpecs:   pipeArray,
 	}, nil
 

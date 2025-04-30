@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file protos/world_gen/world_gen.proto.
  */
 export const file_protos_world_gen_world_gen: GenFile = /*@__PURE__*/
-  fileDesc("CiBwcm90b3Mvd29ybGRfZ2VuL3dvcmxkX2dlbi5wcm90bxIJd29ybGRfZ2VuIk8KC1dvcmxkR2VuUmVxEg8KB2dhbWVfaWQYASABKAkSFgoOdmlld3BvcnRfd2lkdGgYAiABKAUSFwoPdmlld3BvcnRfaGVpZ2h0GAMgASgFIjEKCFBpcGVTcGVjEhEKCWdhcF9zdGFydBgBIAEoBRISCgpnYXBfaGVpZ2h0GAIgASgFIk8KDldvcmxkR2VuZXJhdGVkEhQKDHBpcGVfc3BhY2luZxgBIAEoBRInCgpwaXBlX3NwZWNzGAIgAygLMhMud29ybGRfZ2VuLlBpcGVTcGVjMlcKD1dvcmxkR2VuU2VydmljZRJECg1HZW5lcmF0ZVdvcmxkEhYud29ybGRfZ2VuLldvcmxkR2VuUmVxGhkud29ybGRfZ2VuLldvcmxkR2VuZXJhdGVkIgBCOVo3Z2l0aHViLmNvbS95dXY0MTgvY3M1NTNwcm9qZWN0L2JhY2tlbmQvcHJvdG9zL3dvcmxkX2dlbmIGcHJvdG8z");
+  fileDesc("CiBwcm90b3Mvd29ybGRfZ2VuL3dvcmxkX2dlbi5wcm90bxIJd29ybGRfZ2VuIk8KC1dvcmxkR2VuUmVxEg8KB2dhbWVfaWQYASABKAkSFgoOdmlld3BvcnRfd2lkdGgYAiABKAUSFwoPdmlld3BvcnRfaGVpZ2h0GAMgASgFIjEKCFBpcGVTcGVjEhEKCWdhcF9zdGFydBgBIAEoARISCgpnYXBfaGVpZ2h0GAIgASgBIk8KDldvcmxkR2VuZXJhdGVkEhQKDHBpcGVfc3BhY2luZxgBIAEoARInCgpwaXBlX3NwZWNzGAIgAygLMhMud29ybGRfZ2VuLlBpcGVTcGVjMlcKD1dvcmxkR2VuU2VydmljZRJECg1HZW5lcmF0ZVdvcmxkEhYud29ybGRfZ2VuLldvcmxkR2VuUmVxGhkud29ybGRfZ2VuLldvcmxkR2VuZXJhdGVkIgBCOVo3Z2l0aHViLmNvbS95dXY0MTgvY3M1NTNwcm9qZWN0L2JhY2tlbmQvcHJvdG9zL3dvcmxkX2dlbmIGcHJvdG8z");
 
 /**
  * @generated from message world_gen.WorldGenReq
@@ -44,7 +44,7 @@ export const WorldGenReqSchema: GenMessage<WorldGenReq> = /*@__PURE__*/
  */
 export type PipeSpec = Message<"world_gen.PipeSpec"> & {
   /**
-   * @generated from field: int32 gap_start = 1;
+   * @generated from field: double gap_start = 1;
    */
   gapStart: number;
 
@@ -63,7 +63,7 @@ export type PipeSpec = Message<"world_gen.PipeSpec"> & {
    *  |      |
    *  |      |
    *
-   * @generated from field: int32 gap_height = 2;
+   * @generated from field: double gap_height = 2;
    */
   gapHeight: number;
 };
@@ -84,7 +84,7 @@ export type WorldGenerated = Message<"world_gen.WorldGenerated"> & {
   /**
    * Spacing between pipes on x axis
    *
-   * @generated from field: int32 pipe_spacing = 1;
+   * @generated from field: double pipe_spacing = 1;
    */
   pipeSpacing: number;
 

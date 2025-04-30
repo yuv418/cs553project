@@ -10,19 +10,19 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file protos/frame_gen/frame_gen.proto.
  */
 export const file_protos_frame_gen_frame_gen: GenFile = /*@__PURE__*/
-  fileDesc("CiBwcm90b3MvZnJhbWVfZ2VuL2ZyYW1lX2dlbi5wcm90bxIJZnJhbWVfZ2VuIhsKA1BvcxIJCgF4GAEgASgFEgkKAXkYAiABKAUiqQEKEEdlbmVyYXRlRnJhbWVSZXESDwoHZ2FtZV9pZBgBIAEoCRIlCg1iaXJkX3Bvc2l0aW9uGAIgASgLMg4uZnJhbWVfZ2VuLlBvcxImCg5waXBlX3Bvc2l0aW9ucxgDIAMoCzIOLmZyYW1lX2dlbi5Qb3MSEwoLcGlwZV9zdGFydHMYBCADKAUSEQoJcGlwZV9nYXBzGAUgAygFEg0KBXNjb3JlGAYgASgFIicKEUdlbmVyYXRlRnJhbWVSZXNwEhIKCmZyYW1lX2RpZmYYByABKAwyXwoPRnJhbWVHZW5TZXJ2aWNlEkwKDUdlbmVyYXRlRnJhbWUSGy5mcmFtZV9nZW4uR2VuZXJhdGVGcmFtZVJlcRocLmZyYW1lX2dlbi5HZW5lcmF0ZUZyYW1lUmVzcCIAQg9aDS4vO2ZyYW1lZ2VucGJiBnByb3RvMw");
+  fileDesc("CiBwcm90b3MvZnJhbWVfZ2VuL2ZyYW1lX2dlbi5wcm90bxIJZnJhbWVfZ2VuIhsKA1BvcxIJCgF4GAEgASgBEgkKAXkYAiABKAEivQEKEEdlbmVyYXRlRnJhbWVSZXESDwoHZ2FtZV9pZBgBIAEoCRIlCg1iaXJkX3Bvc2l0aW9uGAIgASgLMg4uZnJhbWVfZ2VuLlBvcxImCg5waXBlX3Bvc2l0aW9ucxgDIAMoCzIOLmZyYW1lX2dlbi5Qb3MSEwoLcGlwZV9zdGFydHMYBCADKAESEQoJcGlwZV9nYXBzGAUgAygBEg0KBXNjb3JlGAYgASgFEhIKCnBpcGVfd2lkdGgYByABKAUiJwoRR2VuZXJhdGVGcmFtZVJlc3ASEgoKZnJhbWVfZGlmZhgHIAEoDDJfCg9GcmFtZUdlblNlcnZpY2USTAoNR2VuZXJhdGVGcmFtZRIbLmZyYW1lX2dlbi5HZW5lcmF0ZUZyYW1lUmVxGhwuZnJhbWVfZ2VuLkdlbmVyYXRlRnJhbWVSZXNwIgBCD1oNLi87ZnJhbWVnZW5wYmIGcHJvdG8z");
 
 /**
  * @generated from message frame_gen.Pos
  */
 export type Pos = Message<"frame_gen.Pos"> & {
   /**
-   * @generated from field: int32 x = 1;
+   * @generated from field: double x = 1;
    */
   x: number;
 
   /**
-   * @generated from field: int32 y = 2;
+   * @generated from field: double y = 2;
    */
   y: number;
 };
@@ -58,12 +58,12 @@ export type GenerateFrameReq = Message<"frame_gen.GenerateFrameReq"> & {
   /**
    * Please consult the world generator for what this means
    *
-   * @generated from field: repeated int32 pipe_starts = 4;
+   * @generated from field: repeated double pipe_starts = 4;
    */
   pipeStarts: number[];
 
   /**
-   * @generated from field: repeated int32 pipe_gaps = 5;
+   * @generated from field: repeated double pipe_gaps = 5;
    */
   pipeGaps: number[];
 
@@ -71,6 +71,13 @@ export type GenerateFrameReq = Message<"frame_gen.GenerateFrameReq"> & {
    * @generated from field: int32 score = 6;
    */
   score: number;
+
+  /**
+   * The actual width of each pipe
+   *
+   * @generated from field: int32 pipe_width = 7;
+   */
+  pipeWidth: number;
 };
 
 /**

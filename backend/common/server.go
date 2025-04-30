@@ -217,7 +217,11 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 
 					log.Printf("Beginning stream for connection\n")
 					buf := PtrReq(new(Req))
-					reqCtx := &commondata.ReqCtx{Username: claims["username"].(string), Jwt: r.URL.Query().Get("token")}
+					reqCtx := &commondata.ReqCtx{
+						Username: claims["username"].(string),
+						Jwt:      r.URL.Query().Get("token"),
+						GameId:   r.URL.Query().Get("gameId"),
+					}
 
 					// https://pkg.go.dev/io#ByteScanner
 					byteReader := bufio.NewReader(stream)

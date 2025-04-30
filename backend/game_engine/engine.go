@@ -22,19 +22,42 @@ const (
 	frameRate = 30
 )
 
+type PlayState int8
+
+const (
+	Ready PlayState = iota
+	Play
+	Over
+)
+
+const (
+	groundHeight = 112
+	pipeWidth    = 52
+	pipeGap      = 90 // Gap between upper and lower pipe
+	gravity      = 0.25
+	flapStrength = 4.6
+	maxPipeSpeed = 5
+	birdX        = 50
+)
+
 type IndividualGameState struct {
-	birdY     float64                    // Bird's vertical position (Y-coordinate, pixels).
-	gravity   float64                    // Gravity force per frame (pixels).
-	flapForce float64                    // Upward force when flapping (negative).
-	world     *worldgenpb.WorldGenerated // Slice of pipes for obstacles.
-	frame     int                        // Frame counter for timing (e.g., pipe spawning).
-	score     int                        // Player’s score (increments when passing pipes).
-	playState string                     // Game state: "playing" or "gameOver".
-	groundX   float64                    // Ground’s horizontal offset for scrolling (pixels).
+	birdY        float64                    // Bird's vertical position (Y-coordinate, pixels).
+	birdVelocity float64                    // Bird velocity
+	flapForce    float64                    // Upward force when flapping (negative).
+	world        *worldgenpb.WorldGenerated // Slice of pipes for obstacles.
+	frame        int32                      // Frame counter for timing (e.g., pipe spawning).
+	score        int32                      // Player’s score (increments when passing pipes).
+	playState    PlayState                  // Game state: "ready," "play," "over".
+	groundX      float64                    // Ground’s horizontal offset for scrolling (pixels).
+	pipeSpeed    float64
+	// Full height/Y
+	pipeWindowX     float64
+	pipeWindowWidth float64
+	pipesToRender   int32
 }
 
 type GameState struct {
-	individualStateMap map[string]IndividualGameState
+	individualStateMap map[string]*IndividualGameState
 }
 
 type SessionState struct {
@@ -56,7 +79,7 @@ func MakeSessionState() *SessionState {
 
 func MakeGameState() *GameState {
 	state := &GameState{}
-	state.individualStateMap = make(map[string]IndividualGameState)
+	state.individualStateMap = make(map[string]*IndividualGameState)
 
 	return state
 }
@@ -64,19 +87,22 @@ func MakeGameState() *GameState {
 func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*emptypb.Empty, error) {
 	GlobalStateLock.Lock()
 
-	GlobalState.individualStateMap[req.GameId] = IndividualGameState{
-		birdY:     0,
-		gravity:   float64(req.ViewportWidth) / 10,
-		flapForce: float64(req.ViewportHeight) / 10,
-		world:     req.World,
-		frame:     0,
-		score:     0,
-		playState: "playing",
+	// TODO: Validate that the game ID doesn't already exist.
+	GlobalState.individualStateMap[req.GameId] = &IndividualGameState{
+		birdY:        200,
+		birdVelocity: 0,
+		flapForce:    float64(req.ViewportHeight) / 10,
+		world:        req.World,
+		frame:        0,
+		score:        0,
+		playState:    Ready,
 		// TODO maybe remove this
-		groundX: 0,
+		groundX:         0,
+		pipeSpeed:       2,
+		pipeWindowX:     float64(req.World.PipeSpacing) * 1.5,
+		pipeWindowWidth: float64(req.ViewportWidth),
+		pipesToRender:   req.ViewportWidth / (pipeWidth + int32(req.World.PipeSpacing)),
 	}
-
-	// Start game loop
 
 	GlobalStateLock.Unlock()
 
@@ -89,27 +115,55 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 	// https://gobyexample.com/timers
 	// Somehow we want to pin this? Whatever
 
-	log.Printf("EstablishGameWebTransport: user ID is %s\n", ctx.Username)
+	log.Printf("EstablishGameWebTransport: user ID is %s game ID is %s\n", ctx.Username, ctx.GameId)
 
 	// https://stackoverflow.com/questions/16466320/is-there-a-way-to-do-repetitive-tasks-at-intervals
+
+	gameId := ctx.GameId
 
 	go (func() {
 
 		timer := time.NewTicker((1000 / frameRate) * time.Millisecond)
 		quit := make(chan struct{})
+		frameUpdate := &framegenpb.GenerateFrameReq{
+			GameId:    gameId,
+			PipeWidth: pipeWidth,
+			BirdPosition: &framegenpb.Pos{
+				X: birdX,
+			},
+		}
 
 		for {
 			select {
 			case <-timer.C:
+				// Get the game ID corresponding to everything
 
+				// TODO: Should we just lock to get the statePtr here and then
+				// lock again to write the statePtr, or what?
 				GlobalStateLock.Lock()
-
-				GlobalSessionState.invidualSessionMap[ctx.Username] = transportWriter
-
+				statePtr := GlobalState.individualStateMap[gameId]
 				GlobalStateLock.Unlock()
 
-				common.WebTransportSendBuf(transportWriter, &framegenpb.GenerateFrameReq{})
+				statePtr.birdVelocity += gravity
+				statePtr.birdY += statePtr.birdVelocity
 
+				// TODO check collisions
+
+				// Advance the pipe window
+				statePtr.pipeWindowX += statePtr.pipeSpeed
+
+				// Render the pipes
+
+				statePtr.score++
+				// Increase difficulty slightly
+				if statePtr.score%5 == 0 && statePtr.pipeSpeed < maxPipeSpeed {
+					statePtr.pipeSpeed += 0.5
+				}
+
+				frameUpdate.Score = statePtr.score
+				frameUpdate.BirdPosition.Y = statePtr.birdY
+
+				common.WebTransportSendBuf(transportWriter, frameUpdate)
 			case <-quit:
 				timer.Stop()
 				return
@@ -124,12 +178,19 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 
 // This is a webtransport function, so returning nil will not send anything
 func HandleInput(ctx *commondata.ReqCtx, inp *enginepb.GameEngineInputReq) (*emptypb.Empty, error) {
-	log.Printf("Username in HandleInput is %s\n", ctx.Username)
+	log.Printf("Username in HandleInput is %s game ID is %s\n", ctx.Username, ctx.GameId)
 
 	switch inp.Key {
 	case enginepb.Key_SPACE:
 		GlobalStateLock.Lock()
-		// Handle key space
+		statePtr := GlobalState.individualStateMap[ctx.GameId]
+
+		if statePtr.playState == Ready {
+			statePtr.playState = Play
+		} else if statePtr.playState == Play {
+			statePtr.birdVelocity = -flapStrength
+		}
+
 		GlobalStateLock.Unlock()
 		break
 	default:
