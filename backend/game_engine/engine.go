@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	frameRate = 15
+	frameRate = 30
 )
 
 type PlayState int8
@@ -106,7 +106,7 @@ func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*empty
 		pipeWindowX:     float64(req.ViewportWidth) * -0.5,
 		pipeWindowWidth: float64(req.ViewportWidth),
 		// Admittedly this could be better
-		pipesToRender: int(float64(req.ViewportWidth)*float64(1.5)) / (pipeWidth + int(req.World.PipeSpacing)),
+		pipesToRender: int(float64(req.ViewportWidth)*float64(3)) / (pipeWidth + int(req.World.PipeSpacing)),
 	}
 
 	GlobalState.individualStateMap[req.GameId] = game
@@ -177,7 +177,7 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 					if i == 0 {
 						adj := (statePtr.pipeWindowX + (float64(i) * advanceAmt) - statePtr.world.PipeSpacing)
 						closestPipe = int(math.Max(0, math.Ceil(adj/advanceAmt)))
-						log.Printf("adj %f pipeWindowX %f closest pipe is %d\n", adj, statePtr.pipeWindowX, closestPipe)
+						// log.Printf("adj %f pipeWindowX %f closest pipe is %d\n", adj, statePtr.pipeWindowX, closestPipe)
 					} else {
 						closestPipe++
 					}
