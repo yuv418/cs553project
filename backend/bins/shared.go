@@ -48,7 +48,7 @@ func SetupGameEngineTables(ctx *abstraction.AbstractionServer) {
 	abstraction.InsertServiceData(abstraction.AbsCtx, "gameEngine", os.Getenv("GAME_ENGINE_URL"), "/game_engine.GameEngineService")
 
 	// Any internal microservice functions don't have to be validated.
-	abstraction.InsertDispatchTable[enginepb.GameEngineStartReq, emptypb.Empty](abstraction.AbsCtx, "gameEngine", "StartGame", engine.StartGame, false)
+	abstraction.InsertDispatchTable[enginepb.GameEngineStartReq, emptypb.Empty](abstraction.AbsCtx, "gameEngine", "EngineStartGame", engine.StartGame, false)
 	// abstraction.InsertDispatchTable[enginepb.GameEngineInputReq, emptypb.Empty](abstraction.AbsCtx, "gameEngine", "HandleInput", engine.HandleInput, true)
 	abstraction.AddWebTransportRoute[enginepb.GameEngineInputReq, *enginepb.GameEngineInputReq, emptypb.Empty, *emptypb.Empty](abstraction.AbsCtx.CommonServer, "/gameEngine/HandleInput", engine.HandleInput, engine.EstablishGameWebTransport)
 }

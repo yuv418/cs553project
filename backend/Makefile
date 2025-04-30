@@ -7,6 +7,9 @@ initiator: initiator.proto
 worldgen: world_gen.proto
 	go build -tags worldgen -o ./out/worldgen ./bins
 
+engine: game_engine.proto
+	go build -tags engine -o ./out/engine ./bins
+
 auth: auth.proto
 	go build -tags auth -o ./out/auth ./bins
 

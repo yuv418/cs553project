@@ -15,6 +15,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 )
 
 type Action struct {
@@ -96,14 +97,21 @@ func InsertDispatchTable[ReqT any, RespT any](
 	AddRoute(absCtx.CommonServer, route,
 		func(ctx context.Context, req *connect.Request[ReqT]) (*connect.Response[RespT], error) {
 			var username string
+			var jwtString string
 			// Get username from ctx
 			claims := ctx.Value("claims")
 			if claims != nil {
 				username = claims.(jwt.MapClaims)["username"].(string)
 			}
+			// Get JWT from ctx
+			jwt := ctx.Value("jwt")
+			if jwt != nil {
+				jwtString = jwt.(string)
+			}
 			resp, err := (handlerFn.(func(*commondata.ReqCtx, *ReqT) (*RespT, error)))(&commondata.ReqCtx{
 				HttpCtx:  &ctx,
 				Username: username,
+				Jwt:      jwtString,
 			}, req.Msg)
 
 			if err != nil {
@@ -132,7 +140,13 @@ func Dispatch[Req any, Resp any](ctx *commondata.ReqCtx, verb string, req *Req) 
 		loc := svcData.prefix + "/" + dispatchTableData.verb
 		log.Printf("(CAL Dispatch) Invoking microservice request on %s at %s\n", svcData.url, loc)
 
-		err := client.Invoke(context.Background(), loc, req, resp)
+		// Create a context with the JWT as an authorization header
+		md := map[string]string{
+			"authorization": "Bearer " + ctx.Jwt,
+		}
+		callCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(md))
+
+		err := client.Invoke(callCtx, loc, req, resp)
 		if err != nil {
 			log.Printf("Request failed with %s\n", err)
 			return nil, err

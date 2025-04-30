@@ -31,7 +31,7 @@ func StartGame(ctx *commondata.ReqCtx, req *initiatorpb.StartGameReq) (*initiato
 		return nil, err
 	}
 
-	_, err = common.Dispatch[enginepb.GameEngineStartReq, emptypb.Empty](ctx, "StartGame", &enginepb.GameEngineStartReq{
+	_, err = common.Dispatch[enginepb.GameEngineStartReq, emptypb.Empty](ctx, "EngineStartGame", &enginepb.GameEngineStartReq{
 		GameId:         gameId,
 		ViewportWidth:  req.ViewportWidth,
 		ViewportHeight: req.ViewportHeight,

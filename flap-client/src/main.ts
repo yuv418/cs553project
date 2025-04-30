@@ -2,11 +2,12 @@ import './style.css';
 import { createConnectTransport } from "@connectrpc/connect-web";
 import { AuthService } from './protos/auth/auth_pb';
 import * as engine from './protos/game_engine/game_engine_pb.js';
+import { InitiatorService, StartGameReqSchema } from './protos/initiator/initiator_pb';
 import { createClient } from "@connectrpc/connect";
-import { create, toBinary } from "@bufbuild/protobuf"
-import { sizeDelimitedEncode, sizeDelimitedDecodeStream  } from "@bufbuild/protobuf/wire"
+import { create } from "@bufbuild/protobuf"
+import { sizeDelimitedEncode, sizeDelimitedDecodeStream } from "@bufbuild/protobuf/wire"
 import { jwtDecode } from "jwt-decode";
-import * as wkt  from "@bufbuild/protobuf/wkt";
+import * as wkt from "@bufbuild/protobuf/wkt";
 
 interface JWTPayload {
     sub?: string;
@@ -14,12 +15,18 @@ interface JWTPayload {
     exp: number;
 }
 
-const transport = createConnectTransport({
+const authTransport = createConnectTransport({
     baseUrl: import.meta.env.VITE_AUTH_SERVICE_URL,
     useBinaryFormat: true,
 });
 
-const client = createClient(AuthService, transport);
+const initiatorTransport = createConnectTransport({
+    baseUrl: import.meta.env.VITE_INITIATOR_SERVICE_URL,
+    useBinaryFormat: true,
+});
+
+const authClient = createClient(AuthService, authTransport);
+const initiatorClient = createClient(InitiatorService, initiatorTransport);
 
 document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -29,7 +36,7 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     const errorDiv = document.getElementById('error-message');
 
     try {
-        const response = await client.authenticate({
+        const response = await authClient.authenticate({
             username,
             password
         });
@@ -40,19 +47,46 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
             // Decode the JWT token
             const decoded = jwtDecode<JWTPayload>(response.jwtToken);
             const username = decoded.sub || decoded.username;
-
-            // Hide the login form and show welcome message
             const loginContainer = document.querySelector('.login-container');
-            if (loginContainer) {
+            const playButton = document.getElementById('playButton');
+            if (loginContainer instanceof HTMLElement && playButton instanceof HTMLElement) {
                 loginContainer.innerHTML = `
                     <div class="welcome-message">
                         <h2>Welcome, ${username}!</h2>
-                        <p>You have successfully logged in.</p>
+                        <p>Click PLAY to start!</p>
                     </div>
                 `;
-            }
+                loginContainer.style.background = 'transparent';
+                playButton.style.display = 'block';
 
-            await connectToWebTransport(response.jwtToken)
+                // Add click handler for the play button
+                playButton.addEventListener('click', async () => {
+                    const gameContainer = document.querySelector('.game-container');
+                    if (!gameContainer) return;
+
+                    try {
+                        const startGameResponse = await initiatorClient.startGame({
+                            jwt: response.jwtToken,
+                            viewportWidth: gameContainer.clientWidth,
+                            viewportHeight: gameContainer.clientHeight
+                        }, {
+                            headers: {
+                                "Authorization": `Bearer ${response.jwtToken}`
+                            }
+                        });
+                        if (startGameResponse.gameId) {
+                            const jumpInstruction = document.getElementById('jumpInstruction');
+                            if (jumpInstruction instanceof HTMLElement) {
+                                jumpInstruction.style.display = 'block';
+                            }
+                            playButton.style.display = 'none';
+                            await connectToWebTransport(response.jwtToken, startGameResponse.gameId);
+                        }
+                    } catch (error) {
+                        console.error('Failed to start game:', error);
+                    }
+                });
+            }
         } else {
             if (errorDiv) errorDiv.textContent = 'Authentication failed';
         }
@@ -62,7 +96,9 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
     }
 });
 
-export const connectToWebTransport = async (jwt) => {
+let gameWriter: WritableStreamDefaultWriter<any> | null = null;
+
+export const connectToWebTransport = async (jwt: string, gameId: string) => {
     try {
         const url = import.meta.env.VITE_WEBTRANSPORT_URL + "?token=" + jwt;
         const transport = new WebTransport(url);
@@ -71,33 +107,81 @@ export const connectToWebTransport = async (jwt) => {
         console.log('WebTransport connection established');
 
         const stream = await transport.createBidirectionalStream();
-        const writer = stream.writable.getWriter();
-
-        // Send a message to the server
+        gameWriter = stream.writable.getWriter();
         const inputReq = create(engine.GameEngineInputReqSchema, {
-            gameId: "idk",
+            gameId: gameId,
             key: engine.Key.SPACE
         })
 
         const inputBin = sizeDelimitedEncode(engine.GameEngineInputReqSchema, inputReq)
 
-        await writer.write(inputBin);
-        console.log(`Sent: ${JSON.stringify(inputReq)}`);
+        await gameWriter.write(inputBin); console.log(`Sent: ${JSON.stringify(inputReq)}`); const gameContainer = document.querySelector('.game-container');
+        const gameFeedback = document.getElementById('gameFeedback');
 
-        // Read a message from the server
-        // const { value, done } = await reader.read();
-        //
-        for await (const msg of sizeDelimitedDecodeStream(wkt.EmptySchema, stream.readable)) {
-            console.log(msg)
+        // Add space bar event listener
+        document.addEventListener('keydown', async (event) => {
+            if (event.code === 'Space' && gameWriter) {
+                event.preventDefault(); // Prevent page scrolling
+
+                // Visual feedback for space press
+                if (gameContainer instanceof HTMLElement) {
+                    gameContainer.classList.add('game-active');
+                    setTimeout(() => {
+                        gameContainer.classList.remove('game-active');
+                    }, 100); // Remove after 100ms
+                }
+
+                // Hide the jump instruction after first jump
+                const jumpInstruction = document.getElementById('jumpInstruction');
+                if (jumpInstruction instanceof HTMLElement) {
+                    jumpInstruction.style.display = 'none';
+                }
+
+                const inputReq = create(engine.GameEngineInputReqSchema, {
+                    gameId: gameId,
+                    key: engine.Key.SPACE
+                });
+                const inputBin = sizeDelimitedEncode(engine.GameEngineInputReqSchema, inputReq);
+                await gameWriter.write(inputBin);
+                console.log('Space key pressed - sent input to server');
+            }
+        });
+
+        // Read messages from the server
+        const reader = stream.readable.getReader();
+
+        try {
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                // Process the incoming message
+                if (value) {
+                    console.log('Received message from server');
+
+                    // Show feedback message
+                    if (gameFeedback instanceof HTMLElement) {
+                        gameFeedback.style.display = 'block';
+                        gameFeedback.textContent = 'Game Update Received!';
+                        setTimeout(() => {
+                            gameFeedback.style.display = 'none';
+                        }, 500); // Hide after 500ms
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Error reading from stream:', e);
+        } finally {
+            reader.releaseLock();
+            if (gameWriter) {
+                gameWriter.close();
+                gameWriter = null;
+            }
+            console.log('Stream closed');
+
+            // Close the WebTransport session
+            transport.close();
+            console.log('WebTransport session closed');
         }
-
-        // Close the stream
-        writer.close();
-        console.log('Stream closed');
-
-        // Close the WebTransport session
-        transport.close();
-        console.log('WebTransport session closed');
     } catch (error) {
         console.error('Error with WebTransport:', error);
     }

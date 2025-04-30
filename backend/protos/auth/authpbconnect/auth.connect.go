@@ -5,7 +5,6 @@
 package authpbconnect
 
 import (
-	__ "./"
 	context "context"
 	errors "errors"
 	connect_go "github.com/bufbuild/connect-go"

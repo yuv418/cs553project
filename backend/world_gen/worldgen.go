@@ -1,6 +1,7 @@
 package worldgen
 
 import (
+	"log"
 	"math/rand"
 
 	"github.com/yuv418/cs553project/backend/commondata"
@@ -12,7 +13,10 @@ const PipesToGenerate int = 10
 func GenerateWorld(ctx *commondata.ReqCtx, req *worldgenpb.WorldGenReq) (*worldgenpb.WorldGenerated, error) {
 	var pipeArray []*worldgenpb.PipeSpec
 
+	log.Printf("Got request params %v\n", req)
+
 	// The game ID doesn't even matter. Maybe we can use it as a seed?
+	log.Printf("req.ViewportWidth %d\n", req.ViewportWidth)
 	gap := rand.Int31n(req.ViewportWidth / 3)
 
 	for range PipesToGenerate {
