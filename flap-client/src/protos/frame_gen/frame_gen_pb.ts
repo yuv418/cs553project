@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file protos/frame_gen/frame_gen.proto.
  */
 export const file_protos_frame_gen_frame_gen: GenFile = /*@__PURE__*/
-  fileDesc("CiBwcm90b3MvZnJhbWVfZ2VuL2ZyYW1lX2dlbi5wcm90bxIJZnJhbWVfZ2VuIhsKA1BvcxIJCgF4GAEgASgBEgkKAXkYAiABKAEivQEKEEdlbmVyYXRlRnJhbWVSZXESDwoHZ2FtZV9pZBgBIAEoCRIlCg1iaXJkX3Bvc2l0aW9uGAIgASgLMg4uZnJhbWVfZ2VuLlBvcxImCg5waXBlX3Bvc2l0aW9ucxgDIAMoCzIOLmZyYW1lX2dlbi5Qb3MSEwoLcGlwZV9zdGFydHMYBCADKAESEQoJcGlwZV9nYXBzGAUgAygBEg0KBXNjb3JlGAYgASgFEhIKCnBpcGVfd2lkdGgYByABKAUiJwoRR2VuZXJhdGVGcmFtZVJlc3ASEgoKZnJhbWVfZGlmZhgHIAEoDDJfCg9GcmFtZUdlblNlcnZpY2USTAoNR2VuZXJhdGVGcmFtZRIbLmZyYW1lX2dlbi5HZW5lcmF0ZUZyYW1lUmVxGhwuZnJhbWVfZ2VuLkdlbmVyYXRlRnJhbWVSZXNwIgBCD1oNLi87ZnJhbWVnZW5wYmIGcHJvdG8z");
+  fileDesc("CiBwcm90b3MvZnJhbWVfZ2VuL2ZyYW1lX2dlbi5wcm90bxIJZnJhbWVfZ2VuIhsKA1BvcxIJCgF4GAEgASgBEgkKAXkYAiABKAEirQEKEEdlbmVyYXRlRnJhbWVSZXESDwoHZ2FtZV9pZBgBIAEoCRIlCg1iaXJkX3Bvc2l0aW9uGAIgASgLMg4uZnJhbWVfZ2VuLlBvcxIWCg5waXBlX3Bvc2l0aW9ucxgDIAMoARITCgtwaXBlX3N0YXJ0cxgEIAMoARIRCglwaXBlX2dhcHMYBSADKAESDQoFc2NvcmUYBiABKAUSEgoKcGlwZV93aWR0aBgHIAEoBSInChFHZW5lcmF0ZUZyYW1lUmVzcBISCgpmcmFtZV9kaWZmGAcgASgMMl8KD0ZyYW1lR2VuU2VydmljZRJMCg1HZW5lcmF0ZUZyYW1lEhsuZnJhbWVfZ2VuLkdlbmVyYXRlRnJhbWVSZXEaHC5mcmFtZV9nZW4uR2VuZXJhdGVGcmFtZVJlc3AiAEIPWg0uLztmcmFtZWdlbnBiYgZwcm90bzM");
 
 /**
  * @generated from message frame_gen.Pos
@@ -51,9 +51,9 @@ export type GenerateFrameReq = Message<"frame_gen.GenerateFrameReq"> & {
   /**
    * The clouds should be fixed and part of the background
    *
-   * @generated from field: repeated frame_gen.Pos pipe_positions = 3;
+   * @generated from field: repeated double pipe_positions = 3;
    */
-  pipePositions: Pos[];
+  pipePositions: number[];
 
   /**
    * Please consult the world generator for what this means

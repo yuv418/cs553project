@@ -16,6 +16,6 @@ export function updateGameState(frame: GenerateFrameReq) {
 
     // Update pipes
     if (frame.pipePositions) {
-        updatePipes(frame.pipePositions);
+        updatePipes(frame.pipePositions, frame.pipeStarts, frame.pipeGaps, frame.pipeWidth);
     }
 }
