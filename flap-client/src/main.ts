@@ -2,9 +2,10 @@ import './style.css';
 import { createConnectTransport } from "@connectrpc/connect-web";
 import { AuthService } from './protos/auth/auth_pb';
 import * as engine from './protos/game_engine/game_engine_pb.js';
+import * as frameGen from './protos/frame_gen/frame_gen_pb.js';
 import { InitiatorService, StartGameReqSchema } from './protos/initiator/initiator_pb';
 import { createClient } from "@connectrpc/connect";
-import { create } from "@bufbuild/protobuf"
+import { create, Message } from "@bufbuild/protobuf"
 import { sizeDelimitedEncode, sizeDelimitedDecodeStream } from "@bufbuild/protobuf/wire"
 import { jwtDecode } from "jwt-decode";
 import * as wkt from "@bufbuild/protobuf/wkt";
@@ -147,31 +148,22 @@ export const connectToWebTransport = async (jwt: string, gameId: string) => {
             }
         });
 
-        // Read messages from the server
-        const reader = stream.readable.getReader();
-
         try {
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) break;
-                // Process the incoming message
-                if (value) {
-                    console.log('Received message from server');
+            for await (const msg of sizeDelimitedDecodeStream(frameGen.GenerateFrameReqSchema, stream.readable)) {
+                console.log('Received game state update:', msg);
 
-                    // Show feedback message
-                    if (gameFeedback instanceof HTMLElement) {
-                        gameFeedback.style.display = 'block';
-                        gameFeedback.textContent = 'Game Update Received!';
-                        setTimeout(() => {
-                            gameFeedback.style.display = 'none';
-                        }, 500); // Hide after 500ms
-                    }
+                // Show feedback message
+                if (gameFeedback instanceof HTMLElement) {
+                    gameFeedback.style.display = 'block';
+                    gameFeedback.textContent = 'Game Update Received!';
+                    setTimeout(() => {
+                        gameFeedback.style.display = 'none';
+                    }, 500); // Hide after 500ms
                 }
             }
         } catch (e) {
             console.error('Error reading from stream:', e);
         } finally {
-            reader.releaseLock();
             if (gameWriter) {
                 gameWriter.close();
                 gameWriter = null;
