@@ -100,6 +100,7 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 			GlobalSessionState.invidualSessionMap[ctx.Username] = transportWriter
 
 			GlobalStateLock.Unlock()
+
 		}
 
 	})()
@@ -121,5 +122,5 @@ func HandleInput(ctx *commondata.ReqCtx, inp *enginepb.GameEngineInputReq) (*emp
 		break
 	}
 
-	return &emptypb.Empty{}, nil
+	return nil, nil
 }
