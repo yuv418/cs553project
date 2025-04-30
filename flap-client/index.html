@@ -14,9 +14,9 @@
     <div class="game-container">
       <div id="bird" style="top:100px;"></div>
       <div id="score">0</div>
-      <div class="login-container">
+      <div class="login-container" style="display:none;">
         <h1>FlappyGo!</h1>
-        <form id="loginForm">
+        <form id="login-form">
           <div class="form-group">
             <label for="username">Username:</label>
             <input type="text" id="username" name="username" autocomplete="username" required>
@@ -29,8 +29,7 @@
         </form>
         <div id="error-message"></div>
       </div>
-      <div id="gameFeedback" class="game-feedback">Message from server</div>
-      <div id="jumpInstruction" class="jump-instruction">Press Space to Jump!</div>
+      <div id="jump-instruction" class="jump-instruction">Press Space to Jump!</div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
