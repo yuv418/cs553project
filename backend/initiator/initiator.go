@@ -25,7 +25,7 @@ func StartGame(ctx *commondata.ReqCtx, req *initiatorpb.StartGameReq) (*initiato
 		ViewportWidth:  req.ViewportWidth,
 		ViewportHeight: req.ViewportHeight,
 	})
-	log.Printf("Generated world %v\n", generatedWorld)
+	log.Printf("(initiator) Generated world for gameId %s...\n", gameId)
 
 	if err != nil {
 		return nil, err
