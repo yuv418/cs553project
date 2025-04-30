@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	frameRate = 30
+	frameRate = 15
 )
 
 type PlayState int8
@@ -54,7 +54,6 @@ type IndividualGameState struct {
 	pipeWindowX     float64
 	pipeWindowWidth float64
 	pipesToRender   int
-	pipeStartOffset float64
 	pipeStarts      []float64
 	pipePositions   []float64
 	pipeGaps        []float64
@@ -101,12 +100,12 @@ func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*empty
 		score:        0,
 		playState:    Ready,
 		// TODO maybe remove this
-		groundX:         0,
-		pipeSpeed:       2,
-		pipeWindowX:     0,
+		groundX:   0,
+		pipeSpeed: 2,
+		// Msut be less than 1
+		pipeWindowX:     float64(req.World.PipeSpacing) * -0.75,
 		pipeWindowWidth: float64(req.ViewportWidth),
 		pipesToRender:   int(req.ViewportWidth) / (pipeWidth + int(req.World.PipeSpacing)),
-		pipeStartOffset: float64(req.World.PipeSpacing) * 1.5,
 	}
 
 	GlobalState.individualStateMap[req.GameId] = game
@@ -172,18 +171,17 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 					// Find the closest pipe to
 					// pipeWindowX + (i*advanceAmt)
 
-					closestPipe := 0
+					// closestPipe := 0
 
-					if statePtr.pipeWindowX > statePtr.world.PipeSpacing {
-						adj := ((statePtr.pipeWindowX + (float64(i) * advanceAmt)) - statePtr.world.PipeSpacing)
-						closestPipe = int(math.Ceil(adj / advanceAmt))
-					}
+					adj := (statePtr.pipeWindowX + (float64(i) * advanceAmt) - statePtr.world.PipeSpacing)
+					closestPipe := int(math.Ceil(adj / advanceAmt))
+					log.Printf("adj %f pipeWindowX %f closest pipe is %d\n", adj, statePtr.pipeWindowX, closestPipe)
 
-					closestPipePos := (float64(closestPipe) * advanceAmt) + statePtr.pipeStartOffset
+					closestPipePos := (float64(closestPipe) * advanceAmt) //  + statePtr.pipeStartOffset
 
 					frameUpdate.PipePositions[i] = closestPipePos - statePtr.pipeWindowX
-					frameUpdate.PipeGaps[i] = statePtr.world.PipeSpecs[i].GapHeight
-					frameUpdate.PipeStarts[i] = statePtr.world.PipeSpecs[i].GapStart
+					frameUpdate.PipeGaps[i] = statePtr.world.PipeSpecs[closestPipe].GapHeight
+					frameUpdate.PipeStarts[i] = statePtr.world.PipeSpecs[closestPipe].GapStart
 
 				}
 

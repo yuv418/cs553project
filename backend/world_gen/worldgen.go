@@ -17,7 +17,7 @@ func GenerateWorld(ctx *commondata.ReqCtx, req *worldgenpb.WorldGenReq) (*worldg
 
 	// The game ID doesn't even matter. Maybe we can use it as a seed?
 	log.Printf("req.ViewportWidth %d\n", req.ViewportWidth)
-	gap := rand.Int31n(req.ViewportWidth / 3)
+	gap := 60 // rand.Int31n(req.ViewportWidth / 3)
 
 	for range PipesToGenerate {
 		start := rand.Int31n(2 * (req.ViewportHeight / 3))
