@@ -101,7 +101,7 @@ let gameWriter: WritableStreamDefaultWriter<any> | null = null;
 
 export const connectToWebTransport = async (jwt: string, gameId: string) => {
     try {
-        const url = import.meta.env.VITE_WEBTRANSPORT_URL + "?token=" + jwt;
+        const url = import.meta.env.VITE_WEBTRANSPORT_URL + "?token=" + jwt + "&gameId=" + gameId;
         const transport = new WebTransport(url);
 
         await transport.ready;

@@ -19,6 +19,7 @@ message GenerateFrameReq {
 
     // Please consult the world generator for what this means
     repeated double pipe_starts = 4;
+    repeated double pipe_gaps = 5;
 
     int32 score = 6;
 
