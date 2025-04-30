@@ -91,21 +91,29 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 
 	log.Printf("EstablishGameWebTransport: user ID is %s\n", ctx.Username)
 
+	// https://stackoverflow.com/questions/16466320/is-there-a-way-to-do-repetitive-tasks-at-intervals
+
 	go (func() {
 
-		timer := time.NewTimer((1000 / frameRate) * time.Millisecond)
+		timer := time.NewTicker((1000 / frameRate) * time.Millisecond)
+		quit := make(chan struct{})
+
 		for {
-			<-timer.C
+			select {
+			case <-timer.C:
 
-			log.Printf("Woke up from timer for game engine, sending a frame update")
+				GlobalStateLock.Lock()
 
-			GlobalStateLock.Lock()
+				GlobalSessionState.invidualSessionMap[ctx.Username] = transportWriter
 
-			GlobalSessionState.invidualSessionMap[ctx.Username] = transportWriter
+				GlobalStateLock.Unlock()
 
-			GlobalStateLock.Unlock()
+				common.WebTransportSendBuf(transportWriter, &framegenpb.GenerateFrameReq{})
 
-			common.WebTransportSendBuf(transportWriter, &framegenpb.GenerateFrameReq{})
+			case <-quit:
+				timer.Stop()
+				return
+			}
 
 		}
 
