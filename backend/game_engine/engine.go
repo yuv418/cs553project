@@ -158,6 +158,11 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 				statePtr := GlobalState.individualStateMap[gameId]
 				GlobalStateLock.Unlock()
 
+				// This is, I think, redundant?
+				if statePtr.playState != Play {
+					continue
+				}
+
 				statePtr.birdVelocity += gravity
 				statePtr.birdY += statePtr.birdVelocity
 
@@ -184,6 +189,7 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 
 					closestPipePos := (float64(closestPipe) * advanceAmt) //  + statePtr.pipeStartOffset
 
+					// TODO check out of bounds
 					frameUpdate.PipePositions[i] = closestPipePos - statePtr.pipeWindowX
 					frameUpdate.PipeGaps[i] = statePtr.world.PipeSpecs[closestPipe].GapHeight
 					frameUpdate.PipeStarts[i] = statePtr.world.PipeSpecs[closestPipe].GapStart
