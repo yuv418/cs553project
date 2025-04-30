@@ -36,6 +36,8 @@ const (
 	pipeGap      = 90 // Gap between upper and lower pipe
 	gravity      = 0.25
 	flapStrength = 4.6
+	maxPipeSpeed = 5
+	birdX        = 50
 )
 
 type IndividualGameState struct {
@@ -43,10 +45,15 @@ type IndividualGameState struct {
 	birdVelocity float64                    // Bird velocity
 	flapForce    float64                    // Upward force when flapping (negative).
 	world        *worldgenpb.WorldGenerated // Slice of pipes for obstacles.
-	frame        int                        // Frame counter for timing (e.g., pipe spawning).
-	score        int                        // Player’s score (increments when passing pipes).
+	frame        int32                      // Frame counter for timing (e.g., pipe spawning).
+	score        int32                      // Player’s score (increments when passing pipes).
 	playState    PlayState                  // Game state: "ready," "play," "over".
 	groundX      float64                    // Ground’s horizontal offset for scrolling (pixels).
+	pipeSpeed    float64
+	// Full height/Y
+	pipeWindowX     float64
+	pipeWindowWidth float64
+	pipesToRender   int32
 }
 
 type GameState struct {
@@ -80,6 +87,7 @@ func MakeGameState() *GameState {
 func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*emptypb.Empty, error) {
 	GlobalStateLock.Lock()
 
+	// TODO: Validate that the game ID doesn't already exist.
 	GlobalState.individualStateMap[req.GameId] = &IndividualGameState{
 		birdY:        200,
 		birdVelocity: 0,
@@ -89,7 +97,11 @@ func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*empty
 		score:        0,
 		playState:    Ready,
 		// TODO maybe remove this
-		groundX: 0,
+		groundX:         0,
+		pipeSpeed:       2,
+		pipeWindowX:     float64(req.World.PipeSpacing) * 1.5,
+		pipeWindowWidth: float64(req.ViewportWidth),
+		pipesToRender:   req.ViewportWidth / (pipeWidth + int32(req.World.PipeSpacing)),
 	}
 
 	GlobalStateLock.Unlock()
@@ -107,18 +119,51 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 
 	// https://stackoverflow.com/questions/16466320/is-there-a-way-to-do-repetitive-tasks-at-intervals
 
+	gameId := ctx.GameId
+
 	go (func() {
 
 		timer := time.NewTicker((1000 / frameRate) * time.Millisecond)
 		quit := make(chan struct{})
+		frameUpdate := &framegenpb.GenerateFrameReq{
+			GameId:    gameId,
+			PipeWidth: pipeWidth,
+			BirdPosition: &framegenpb.Pos{
+				X: birdX,
+			},
+		}
 
 		for {
 			select {
 			case <-timer.C:
 				// Get the game ID corresponding to everything
 
-				common.WebTransportSendBuf(transportWriter, &framegenpb.GenerateFrameReq{})
+				// TODO: Should we just lock to get the statePtr here and then
+				// lock again to write the statePtr, or what?
+				GlobalStateLock.Lock()
+				statePtr := GlobalState.individualStateMap[gameId]
+				GlobalStateLock.Unlock()
 
+				statePtr.birdVelocity += gravity
+				statePtr.birdY += statePtr.birdVelocity
+
+				// TODO check collisions
+
+				// Advance the pipe window
+				statePtr.pipeWindowX += statePtr.pipeSpeed
+
+				// Render the pipes
+
+				statePtr.score++
+				// Increase difficulty slightly
+				if statePtr.score%5 == 0 && statePtr.pipeSpeed < maxPipeSpeed {
+					statePtr.pipeSpeed += 0.5
+				}
+
+				frameUpdate.Score = statePtr.score
+				frameUpdate.BirdPosition.Y = statePtr.birdY
+
+				common.WebTransportSendBuf(transportWriter, frameUpdate)
 			case <-quit:
 				timer.Stop()
 				return

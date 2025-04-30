@@ -10,8 +10,8 @@ message WorldGenReq {
 }
 
 message PipeSpec {
-    int32 gap_start = 1;
-    int32 gap_height = 2;
+    double gap_start = 1;
+    double gap_height = 2;
     //  |      |
     //  |      |
     //  |      |
@@ -30,7 +30,7 @@ message PipeSpec {
 // Everything here is in terms of percentages
 message WorldGenerated {
     // Spacing between pipes on x axis
-    int32 pipe_spacing = 1;
+    double pipe_spacing = 1;
     repeated PipeSpec pipe_specs = 2;
 }
 

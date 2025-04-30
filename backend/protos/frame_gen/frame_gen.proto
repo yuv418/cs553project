@@ -5,8 +5,8 @@ package frame_gen;
 option go_package = "./;framegenpb";
 
 message Pos {
-    int32 x = 1;
-    int32 y = 2;
+    double x = 1;
+    double y = 2;
 }
 
 message GenerateFrameReq {
@@ -18,10 +18,12 @@ message GenerateFrameReq {
     repeated Pos pipe_positions = 3;
 
     // Please consult the world generator for what this means
-    repeated int32 pipe_starts = 4;
-    repeated int32 pipe_gaps = 5;
+    repeated double pipe_starts = 4;
 
     int32 score = 6;
+
+    // The actual width of each pipe
+    int32 pipe_width = 7;
 }
 
 message GenerateFrameResp { bytes frame_diff = 7; }
