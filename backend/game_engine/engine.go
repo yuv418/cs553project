@@ -10,7 +10,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/yuv418/cs553project/backend/common"
 	"github.com/yuv418/cs553project/backend/commondata"
+	framegenpb "github.com/yuv418/cs553project/backend/protos/frame_gen"
 	enginepb "github.com/yuv418/cs553project/backend/protos/game_engine"
 	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -95,11 +97,15 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 		for {
 			<-timer.C
 
+			log.Printf("Woke up from timer for game engine, sending a frame update")
+
 			GlobalStateLock.Lock()
 
 			GlobalSessionState.invidualSessionMap[ctx.Username] = transportWriter
 
 			GlobalStateLock.Unlock()
+
+			common.WebTransportSendBuf(transportWriter, &framegenpb.GenerateFrameReq{})
 
 		}
 
