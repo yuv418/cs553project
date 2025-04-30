@@ -12,10 +12,10 @@ export function createPipe(x: number, y: number, width: number, isUpper: boolean
 
 
     if (isUpper) {
-        pipeBody.style.bottom = '-10px';
+        pipeBody.style.bottom = '0';
         pipeBody.style.height = `${y}px`;
     } else {
-        pipeBody.style.top = '-10px';
+        pipeBody.style.top = '0';
         pipeBody.style.height = `${y}px`;
     }
 
