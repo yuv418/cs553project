@@ -130,8 +130,10 @@ button[type="submit"]:hover {
     width: 34px;
     height: 24px;
     left: 50px;
-    background: #FFD700;
-    border-radius: 50%;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+    background-image: url('/assets/sprites/yellowbird-midflap.png');
     z-index: 2;
     transition: transform 0.1s ease-out;
 }

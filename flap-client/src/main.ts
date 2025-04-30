@@ -9,6 +9,7 @@ import { jwtDecode } from "jwt-decode";
 
 import * as engine from './protos/game_engine/game_engine_pb.js';
 import * as frameGen from './protos/frame_gen/frame_gen_pb.js';
+import { env } from 'process';
 
 interface JWTPayload {
     sub?: string;
@@ -77,6 +78,22 @@ let bird: HTMLElement | null = null;
 let pipes: HTMLElement[] = [];
 let gameContainer: HTMLElement | null = null;
 let score = 0;
+let lastBirdY: number | null = null;
+
+const birdSprites = {
+    up: '/assets/sprites/yellowbird-upflap.png',
+    mid: '/assets/sprites/yellowbird-midflap.png',
+    down: '/assets/sprites/yellowbird-downflap.png'
+};
+
+// Preload bird sprites (we love performance)
+Object.values(birdSprites).map(src => {
+    const img = new Image();
+    img.src = src;
+    return img;
+});
+
+let animationFrameId: number;
 
 async function startGame(response: AuthResponse) {
     const loginContainer = document.querySelector('.login-container') as HTMLElement;
@@ -107,12 +124,44 @@ async function startGame(response: AuthResponse) {
     }
 }
 
+function animateBird() {
+    if (!bird) return;
+    const birdY = parseFloat(bird.style.top) || 0;
+    if (lastBirdY !== null) {
+        if (birdY < lastBirdY) {
+            // Bird is moving up
+            bird.style.backgroundImage = `url(${birdSprites.up})`;
+        } else if (birdY > lastBirdY) {
+            // Bird is moving down
+            bird.style.backgroundImage = `url(${birdSprites.down})`;
+        }
+    }
+    lastBirdY = birdY;
+    animationFrameId = requestAnimationFrame(animateBird);
+}
+
 function updateBirdPosition(y: number) {
     if (!bird) return;
+    
+    // Determine vertical movement
+    let spriteToUse = birdSprites.mid;
+    if (lastBirdY !== null) {
+        if (y < lastBirdY - 2) { // Moving up
+            spriteToUse = birdSprites.up;
+        } else if (y > lastBirdY + 2) { // Moving down
+            spriteToUse = birdSprites.down;
+        }
+    }
+    
+    // Update position and sprite
     bird.style.top = `${y}px`;
-    // Add a slight rotation based on vertical position
-    const rotation = Math.min(Math.max(-20, y), 20);
+    bird.style.backgroundImage = `url(${spriteToUse})`;
+    
+    // Add a slight rotation based on vertical movement
+    const rotation = lastBirdY !== null ? Math.min(Math.max(-20, (y - lastBirdY) * 2), 20) : 0;
     bird.style.transform = `rotate(${rotation}deg)`;
+    
+    lastBirdY = y;
 }
 
 function createPipe(x: number, y: number, isUpper: boolean): HTMLElement {
@@ -202,7 +251,10 @@ export const connectToWebTransport = async (jwt: string, gameId: string) => {
         const inputBin = sizeDelimitedEncode(engine.GameEngineInputReqSchema, inputReq);
 
         await gameWriter.write(inputBin);
-        console.log(`Sent: ${JSON.stringify(inputReq)}`);
+
+        if (import.meta.env.VITE_DEBUG) {
+            console.log('Initial input sent:', inputReq);
+        }
 
         const gameContainer = document.querySelector('.game-container');
         const gameFeedback = document.getElementById('gameFeedback');
@@ -237,7 +289,9 @@ export const connectToWebTransport = async (jwt: string, gameId: string) => {
 
         try {
             for await (const msg of sizeDelimitedDecodeStream(frameGen.GenerateFrameReqSchema, stream.readable)) {
-                console.log('Received game state update:', msg);
+                if (import.meta.env.VITE_DEBUG) {
+                    console.log('Received game state update:', msg);
+                }
                 updateGameState(msg);
             }
         } catch (e) {
@@ -246,12 +300,19 @@ export const connectToWebTransport = async (jwt: string, gameId: string) => {
             if (gameWriter) {
                 gameWriter.close();
                 gameWriter = null;
+            }            // Reset bird state
+            lastBirdY = null;
+
+            if (import.meta.env.VITE_DEBUG) {
+                console.log('Stream closed');
             }
-            console.log('Stream closed');
 
             // Close the WebTransport session
             transport.close();
-            console.log('WebTransport session closed');
+
+            if (import.meta.env.VITE_DEBUG) {
+                console.log('WebTransport session closed');
+            }
         }
     } catch (error) {
         console.error('Error with WebTransport:', error);
