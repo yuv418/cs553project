@@ -76,8 +76,6 @@ func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*empty
 		groundX: 0,
 	}
 
-	// Start game loop
-
 	GlobalStateLock.Unlock()
 
 	return &emptypb.Empty{}, nil
@@ -89,7 +87,7 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 	// https://gobyexample.com/timers
 	// Somehow we want to pin this? Whatever
 
-	log.Printf("EstablishGameWebTransport: user ID is %s\n", ctx.Username)
+	log.Printf("EstablishGameWebTransport: user ID is %s game ID is %s\n", ctx.Username, ctx.GameId)
 
 	// https://stackoverflow.com/questions/16466320/is-there-a-way-to-do-repetitive-tasks-at-intervals
 
@@ -101,12 +99,7 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 		for {
 			select {
 			case <-timer.C:
-
-				GlobalStateLock.Lock()
-
-				GlobalSessionState.invidualSessionMap[ctx.Username] = transportWriter
-
-				GlobalStateLock.Unlock()
+				// Get the game ID corresponding to everything
 
 				common.WebTransportSendBuf(transportWriter, &framegenpb.GenerateFrameReq{})
 
