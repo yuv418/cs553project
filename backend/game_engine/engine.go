@@ -57,6 +57,7 @@ type IndividualGameState struct {
 	pipeStarts      []float64
 	pipePositions   []float64
 	pipeGaps        []float64
+	prevClosestPipe int
 }
 
 type GameState struct {
@@ -106,7 +107,8 @@ func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*empty
 		pipeWindowX:     float64(req.ViewportWidth) * -0.5,
 		pipeWindowWidth: float64(req.ViewportWidth),
 		// Admittedly this could be better
-		pipesToRender: int(float64(req.ViewportWidth)*float64(3)) / (pipeWidth + int(req.World.PipeSpacing)),
+		pipesToRender:   int(float64(req.ViewportWidth)*float64(3)) / (pipeWidth + int(req.World.PipeSpacing)),
+		prevClosestPipe: 0,
 	}
 
 	GlobalState.individualStateMap[req.GameId] = game
@@ -180,9 +182,13 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 					// pipeWindowX + (i*advanceAmt)
 
 					if i == 0 {
-						adj := (statePtr.pipeWindowX + (float64(i) * advanceAmt) - statePtr.world.PipeSpacing)
+						adj := (statePtr.pipeWindowX - pipeWidth)
 						closestPipe = int(math.Max(0, math.Ceil(adj/advanceAmt)))
 						// log.Printf("adj %f pipeWindowX %f closest pipe is %d\n", adj, statePtr.pipeWindowX, closestPipe)
+						if statePtr.prevClosestPipe != closestPipe {
+							statePtr.score++
+							statePtr.prevClosestPipe = closestPipe
+						}
 					} else {
 						closestPipe++
 					}
@@ -196,7 +202,6 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 
 				}
 
-				statePtr.score++
 				// Increase difficulty slightly
 				if statePtr.score%5 == 0 && statePtr.pipeSpeed < maxPipeSpeed {
 					statePtr.pipeSpeed += 0.5
