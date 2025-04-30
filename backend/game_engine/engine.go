@@ -22,19 +22,35 @@ const (
 	frameRate = 30
 )
 
+type PlayState int8
+
+const (
+	Ready PlayState = iota
+	Play
+	Over
+)
+
+const (
+	groundHeight = 112
+	pipeWidth    = 52
+	pipeGap      = 90 // Gap between upper and lower pipe
+	gravity      = 0.25
+	flapStrength = 4.6
+)
+
 type IndividualGameState struct {
-	birdY     float64                    // Bird's vertical position (Y-coordinate, pixels).
-	gravity   float64                    // Gravity force per frame (pixels).
-	flapForce float64                    // Upward force when flapping (negative).
-	world     *worldgenpb.WorldGenerated // Slice of pipes for obstacles.
-	frame     int                        // Frame counter for timing (e.g., pipe spawning).
-	score     int                        // Player’s score (increments when passing pipes).
-	playState string                     // Game state: "playing" or "gameOver".
-	groundX   float64                    // Ground’s horizontal offset for scrolling (pixels).
+	birdY        float64                    // Bird's vertical position (Y-coordinate, pixels).
+	birdVelocity float64                    // Bird velocity
+	flapForce    float64                    // Upward force when flapping (negative).
+	world        *worldgenpb.WorldGenerated // Slice of pipes for obstacles.
+	frame        int                        // Frame counter for timing (e.g., pipe spawning).
+	score        int                        // Player’s score (increments when passing pipes).
+	playState    PlayState                  // Game state: "ready," "play," "over".
+	groundX      float64                    // Ground’s horizontal offset for scrolling (pixels).
 }
 
 type GameState struct {
-	individualStateMap map[string]IndividualGameState
+	individualStateMap map[string]*IndividualGameState
 }
 
 type SessionState struct {
@@ -56,7 +72,7 @@ func MakeSessionState() *SessionState {
 
 func MakeGameState() *GameState {
 	state := &GameState{}
-	state.individualStateMap = make(map[string]IndividualGameState)
+	state.individualStateMap = make(map[string]*IndividualGameState)
 
 	return state
 }
@@ -64,14 +80,14 @@ func MakeGameState() *GameState {
 func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*emptypb.Empty, error) {
 	GlobalStateLock.Lock()
 
-	GlobalState.individualStateMap[req.GameId] = IndividualGameState{
-		birdY:     0,
-		gravity:   float64(req.ViewportWidth) / 10,
-		flapForce: float64(req.ViewportHeight) / 10,
-		world:     req.World,
-		frame:     0,
-		score:     0,
-		playState: "playing",
+	GlobalState.individualStateMap[req.GameId] = &IndividualGameState{
+		birdY:        200,
+		birdVelocity: 0,
+		flapForce:    float64(req.ViewportHeight) / 10,
+		world:        req.World,
+		frame:        0,
+		score:        0,
+		playState:    Ready,
 		// TODO maybe remove this
 		groundX: 0,
 	}
@@ -117,12 +133,19 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 
 // This is a webtransport function, so returning nil will not send anything
 func HandleInput(ctx *commondata.ReqCtx, inp *enginepb.GameEngineInputReq) (*emptypb.Empty, error) {
-	log.Printf("Username in HandleInput is %s\n", ctx.Username)
+	log.Printf("Username in HandleInput is %s game ID is %s\n", ctx.Username, ctx.GameId)
 
 	switch inp.Key {
 	case enginepb.Key_SPACE:
 		GlobalStateLock.Lock()
-		// Handle key space
+		statePtr := GlobalState.individualStateMap[ctx.GameId]
+
+		if statePtr.playState == Ready {
+			statePtr.playState = Play
+		} else if statePtr.playState == Play {
+			statePtr.birdVelocity = -flapStrength
+		}
+
 		GlobalStateLock.Unlock()
 		break
 	default:
