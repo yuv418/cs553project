@@ -8,11 +8,16 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/yuv418/cs553project/backend/commondata"
 	enginepb "github.com/yuv418/cs553project/backend/protos/game_engine"
 	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
 	"google.golang.org/protobuf/types/known/emptypb"
+)
+
+const (
+	frameRate = 30
 )
 
 type IndividualGameState struct {
@@ -77,13 +82,27 @@ func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*empty
 }
 
 func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Writer) error {
+
+	// Acquire the WebTransport session for this username
+	// https://gobyexample.com/timers
+	// Somehow we want to pin this? Whatever
+
 	log.Printf("EstablishGameWebTransport: user ID is %s\n", ctx.Username)
 
-	GlobalStateLock.Lock()
+	go (func() {
 
-	GlobalSessionState.invidualSessionMap[ctx.Username] = transportWriter
+		timer := time.NewTimer((1000 / frameRate) * time.Millisecond)
+		for {
+			<-timer.C
 
-	GlobalStateLock.Unlock()
+			GlobalStateLock.Lock()
+
+			GlobalSessionState.invidualSessionMap[ctx.Username] = transportWriter
+
+			GlobalStateLock.Unlock()
+		}
+
+	})()
 
 	return nil
 }
