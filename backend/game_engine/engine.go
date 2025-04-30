@@ -33,7 +33,7 @@ const (
 
 const (
 	groundHeight = 112
-	pipeWidth    = 52
+	pipeWidth    = 72
 	gravity      = 0.25
 	flapStrength = 4.6
 	maxPipeSpeed = 5
