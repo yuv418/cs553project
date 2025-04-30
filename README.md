@@ -1,5 +1,12 @@
 # cs553project
 
+## Asset Credit
+
+Select assets (sprites, audio) courtesy [Samuel Custodio](https://github.com/samuelcust/flappy-bird-assets).
+
+
+## AI Attribution
+
 Initial `game.html` generated via OpenAI's API using `o1` model with the following prompt:
 
 > Generate HTML/CSS/JS for a clone of the game Flappy Bird. Ensure complete feature parity with the original Flappy Bird game originally released for mobile devices. Output the list of features first, then write the code. Use basic inline SVGs for temporary graphics.
@@ -45,13 +52,3 @@ The model returned the following blurb, and the complete game code.
 >
 >Game Over Screen
 >Displays final score and best score, with an option to restart instantly.
-
-## Generating protos
-
-For backend auth, run:
-
-`protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative backend/protos/auth/auth.proto`
-
-For the client, run:
-
-`npx buf generate`
