@@ -8,7 +8,7 @@ import (
 	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
 )
 
-const PipesToGenerate int = 10
+const PipesToGenerate int = 10000
 
 func GenerateWorld(ctx *commondata.ReqCtx, req *worldgenpb.WorldGenReq) (*worldgenpb.WorldGenerated, error) {
 	var pipeArray []*worldgenpb.PipeSpec
@@ -17,7 +17,7 @@ func GenerateWorld(ctx *commondata.ReqCtx, req *worldgenpb.WorldGenReq) (*worldg
 
 	// The game ID doesn't even matter. Maybe we can use it as a seed?
 	log.Printf("req.ViewportWidth %d\n", req.ViewportWidth)
-	gap := 60 // rand.Int31n(req.ViewportWidth / 3)
+	gap := (req.ViewportWidth / 4) + rand.Int31n(req.ViewportWidth/4)
 
 	for range PipesToGenerate {
 		start := rand.Int31n(2 * (req.ViewportHeight / 3))

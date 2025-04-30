@@ -103,9 +103,10 @@ func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*empty
 		groundX:   0,
 		pipeSpeed: 2,
 		// Msut be less than 1
-		pipeWindowX:     float64(req.World.PipeSpacing) * -0.75,
+		pipeWindowX:     float64(req.ViewportWidth) * -0.5,
 		pipeWindowWidth: float64(req.ViewportWidth),
-		pipesToRender:   int(req.ViewportWidth) / (pipeWidth + int(req.World.PipeSpacing)),
+		// Admittedly this could be better
+		pipesToRender: int(float64(req.ViewportWidth)*float64(1.5)) / (pipeWidth + int(req.World.PipeSpacing)),
 	}
 
 	GlobalState.individualStateMap[req.GameId] = game
@@ -166,16 +167,20 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 				statePtr.pipeWindowX += statePtr.pipeSpeed
 
 				advanceAmt := pipeWidth + statePtr.world.PipeSpacing
+
+				closestPipe := 0
 				// Render the pipes
 				for i := range statePtr.pipesToRender {
 					// Find the closest pipe to
 					// pipeWindowX + (i*advanceAmt)
 
-					// closestPipe := 0
-
-					adj := (statePtr.pipeWindowX + (float64(i) * advanceAmt) - statePtr.world.PipeSpacing)
-					closestPipe := int(math.Ceil(adj / advanceAmt))
-					log.Printf("adj %f pipeWindowX %f closest pipe is %d\n", adj, statePtr.pipeWindowX, closestPipe)
+					if i == 0 {
+						adj := (statePtr.pipeWindowX + (float64(i) * advanceAmt) - statePtr.world.PipeSpacing)
+						closestPipe = int(math.Max(0, math.Ceil(adj/advanceAmt)))
+						log.Printf("adj %f pipeWindowX %f closest pipe is %d\n", adj, statePtr.pipeWindowX, closestPipe)
+					} else {
+						closestPipe++
+					}
 
 					closestPipePos := (float64(closestPipe) * advanceAmt) //  + statePtr.pipeStartOffset
 
