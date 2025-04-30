@@ -175,7 +175,7 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 					closestPipe := 0
 
 					if statePtr.pipeWindowX > statePtr.world.PipeSpacing {
-						adj := (statePtr.pipeWindowX - statePtr.world.PipeSpacing)
+						adj := ((statePtr.pipeWindowX + (float64(i) * advanceAmt)) - statePtr.world.PipeSpacing)
 						closestPipe = int(math.Ceil(adj / advanceAmt))
 					}
 
