@@ -108,6 +108,7 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 	return nil
 }
 
+// This is a webtransport function, so returning nil will not send anything
 func HandleInput(ctx *commondata.ReqCtx, inp *enginepb.GameEngineInputReq) (*emptypb.Empty, error) {
 	log.Printf("Username in HandleInput is %s\n", ctx.Username)
 

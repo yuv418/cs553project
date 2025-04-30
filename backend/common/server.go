@@ -241,9 +241,10 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 						// TODO add the header for JWT
 						resp, err := handlerFn(reqCtx, buf)
 						ptrResp := PtrRes(resp)
+
 						if err != nil {
 							log.Printf("Handler for WebTransport failed! %s\n", err)
-						} else {
+						} else if resp != nil {
 							WebTransportSendBuf(byteWriter, ptrResp)
 						}
 
