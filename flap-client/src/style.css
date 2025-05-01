@@ -111,6 +111,7 @@ button[type="submit"]:hover {
 
 .jump-instruction {
     position: absolute;
+    z-index: 9;
     top: 30%;
     left: 50%;
     transform: translateX(-50%);
@@ -164,4 +165,43 @@ button[type="submit"]:hover {
     background-color: #3a9e41;
     border: 2px solid #2d3436;
     box-shadow: -2px 0 3px rgba(0, 0, 0, 0.2);
+}
+
+.game-over {
+    z-index: 10;
+    text-transform: uppercase;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 20px;
+    border-radius: 15px;
+    width: 80%;
+    max-width: 300px;
+    text-align: center;
+}
+
+.game-over p {
+    margin-bottom: 10px;
+    color: #2d3436;
+}
+
+.game-over span {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 32px;
+    color: #2d3436;
+}
+
+.game-over button {
+    text-transform: uppercase;
+    padding: 12px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
 }

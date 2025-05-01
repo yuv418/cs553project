@@ -25,7 +25,7 @@ export function setupLoginForm() {
 
         const response = await handleLogin(username, password);
         if (response?.jwtToken) {
-            showJumpInstruction(response);
+            showJumpInstruction();
         } else {
             if (errorDiv) errorDiv.textContent = 'Authentication failed. Please try again.';
         }

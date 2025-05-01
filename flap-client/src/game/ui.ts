@@ -2,24 +2,25 @@ import { AuthResponse } from '../protos/auth/auth_pb';
 import { decodeToken, initiatorClient, isLoggedIn } from '../auth/auth';
 import { startGameTransport } from '../network/transport';
 import { setupLoginForm } from '../auth/form';
+import { birdSprites, getBirdSize } from './bird';
 
 let gameContainer: HTMLElement | null = null;
 let score = 0;
 
 export function initializeUI() {
     gameContainer = document.querySelector('.game-container');
+    hideGameOverScreen();
     if (isLoggedIn()) {
         const token = localStorage.getItem('auth_token');
         if (token) {
-            const response = { jwtToken: token } as AuthResponse;
-            showJumpInstruction(response);
+            showJumpInstruction();
         }
     } else {
         setupLoginForm();
     }
 }
 
-export function showJumpInstruction(response: AuthResponse) {
+export function showJumpInstruction() {
     const loginContainer = document.querySelector('.login-container');
     const gameContainer = document.querySelector('.game-container');
     const jumpInstruction = document.getElementById('jump-instruction');
@@ -28,6 +29,37 @@ export function showJumpInstruction(response: AuthResponse) {
         loginContainer.style.display = 'none';
         jumpInstruction!.style.display = 'block';
         document.addEventListener('keydown', startGameIfSpacePressed);
+    }
+}
+
+export function showGameOverScreen() {
+    const gameOverScreen = document.getElementById('game-over');
+    if (gameOverScreen instanceof HTMLElement) {
+        gameOverScreen.style.display = 'block';
+        const scoreElement = document.getElementById('final-score');
+        if (scoreElement) {
+            scoreElement.textContent = score.toString();
+        }
+
+        const restartButton = document.getElementById('restart-button');
+        if (restartButton instanceof HTMLButtonElement) {
+            restartButton.addEventListener('click', () => {
+                initializeUI();
+            }, { once: true });
+            document.addEventListener('keydown', (event) => {
+                if (event.code === 'Space') {
+                    event.preventDefault();
+                    restartButton.click();
+                }
+            }, { once: true });
+        }
+    }
+}
+
+export function hideGameOverScreen() {
+    const gameOverScreen = document.getElementById('game-over');
+    if (gameOverScreen instanceof HTMLElement) {
+        gameOverScreen.style.display = 'none';
     }
 }
 
@@ -48,12 +80,6 @@ export function hideJumpInstruction() {
     }
 }
 
-export function updateGameVisuals(isActive: boolean) {
-    if (gameContainer instanceof HTMLElement) {
-        gameContainer.classList.toggle('game-active', isActive);
-    }
-}
-
 export function hideLoginContainer() {
     const loginContainer = document.querySelector('.login-container');
     if (loginContainer instanceof HTMLElement) {
@@ -64,11 +90,15 @@ export function hideLoginContainer() {
 export async function startGame(response: AuthResponse) {
     if (!gameContainer) return;
 
+    const birdSize = getBirdSize();
+
     try {
         const startGameResponse = await initiatorClient.startGame({
             jwt: response.jwtToken,
             viewportWidth: gameContainer.clientWidth,
-            viewportHeight: gameContainer.clientHeight
+            viewportHeight: gameContainer.clientHeight,
+            birdHeight: birdSize.height,
+            birdWidth: birdSize.width
         }, {
             headers: {
                 "Authorization": `Bearer ${response.jwtToken}`

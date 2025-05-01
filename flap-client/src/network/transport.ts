@@ -56,8 +56,6 @@ function setupInputHandling(gameId: string) {
     document.addEventListener('keydown', async (event) => {
         if (event.code === 'Space' && gameWriter) {
             event.preventDefault();
-            updateGameVisuals(true);
-            setTimeout(() => updateGameVisuals(false), 100);
             hideJumpInstruction();
             await sendGameInput(gameId);
         }

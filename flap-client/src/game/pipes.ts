@@ -51,8 +51,8 @@ export function updatePipes(pipePositions: number[], pipeStarts: number[], pipeG
         gameContainer!.appendChild(upperPipe);
         pipes.push(upperPipe);
 
-        // Create lower pipe (gap of 90px between pipes)
-        const lowerPipeY = gameContainer!.clientHeight - start - gap // - 112; // 112 is ground height
+        // Create lower pipe
+        const lowerPipeY = gameContainer!.clientHeight - start - gap;
         const lowerPipe = createPipe(pos, lowerPipeY, pipeWidth, false);
         gameContainer!.appendChild(lowerPipe);
         pipes.push(lowerPipe);

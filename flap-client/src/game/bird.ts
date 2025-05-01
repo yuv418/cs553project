@@ -44,3 +44,15 @@ export function updateBirdPosition(y: number) {
 export function resetBird() {
     lastBirdY = null;
 }
+
+export function getBirdSize() {
+    if (!bird) {
+        bird = document.getElementById('bird');
+        if (!bird) return { width: 0, height: 0 };
+    }
+    
+    return {
+        width: bird.clientWidth,
+        height: bird.clientHeight
+    }
+}

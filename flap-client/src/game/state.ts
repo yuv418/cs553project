@@ -1,9 +1,16 @@
 import type { GenerateFrameReq } from '../protos/frame_gen/frame_gen_pb';
 import { updateBirdPosition } from './bird';
 import { updatePipes } from './pipes';
-import { updateScore } from './ui';
+import { showGameOverScreen, updateScore } from './ui';
 
 export function updateGameState(frame: GenerateFrameReq) {
+
+    // Update game state
+    if (frame.gameOver) {
+        showGameOverScreen();
+        return;
+    }
+
     // Update bird position
     if (frame.birdPosition) {
         updateBirdPosition(frame.birdPosition.y);
