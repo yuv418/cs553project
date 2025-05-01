@@ -25,6 +25,7 @@ message GenerateFrameReq {
 
     // The actual width of each pipe
     int32 pipe_width = 7;
+    bool game_over = 8;
 }
 
 message GenerateFrameResp { bytes frame_diff = 7; }

@@ -20,8 +20,8 @@ func GenerateWorld(ctx *commondata.ReqCtx, req *worldgenpb.WorldGenReq) (*worldg
 	gap := (req.ViewportWidth / 4) + rand.Int31n(req.ViewportWidth/4)
 
 	for range PipesToGenerate {
-		start := rand.Int31n(2 * (req.ViewportHeight / 3))
-		height := rand.Int31n(((req.ViewportHeight - start) * 3) / 4)
+		start := (req.ViewportHeight / 9) + rand.Int31n(2*(req.ViewportHeight/3))
+		height := ((req.ViewportHeight - start) / 4) + rand.Int31n(((req.ViewportHeight - start) / 2))
 		// Leave 1/4 of height for the pipe.
 		pipeArray = append(pipeArray, &worldgenpb.PipeSpec{
 			GapStart:  float64(start),

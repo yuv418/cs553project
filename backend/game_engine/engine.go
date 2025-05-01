@@ -147,6 +147,7 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 			PipePositions: make([]float64, pipesToRender, pipesToRender),
 			PipeStarts:    make([]float64, pipesToRender, pipesToRender),
 			PipeGaps:      make([]float64, pipesToRender, pipesToRender),
+			GameOver:      false,
 		}
 
 		for {
@@ -199,6 +200,23 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 					frameUpdate.PipePositions[i] = closestPipePos - statePtr.pipeWindowX
 					frameUpdate.PipeGaps[i] = statePtr.world.PipeSpecs[closestPipe].GapHeight
 					frameUpdate.PipeStarts[i] = statePtr.world.PipeSpecs[closestPipe].GapStart
+
+					if birdX > frameUpdate.PipePositions[i] &&
+						birdX < frameUpdate.PipePositions[i]+pipeWidth &&
+						(statePtr.birdY <= statePtr.world.PipeSpecs[closestPipe].GapStart ||
+							statePtr.birdY >= statePtr.world.PipeSpecs[closestPipe].GapStart+statePtr.world.PipeSpecs[closestPipe].GapHeight) {
+						log.Printf(
+							"birdX %d, birdY %f, pipePos %f, pipePosEnd %f, GapStart %f, GapAfter %f Game over!",
+							birdX,
+							statePtr.birdY,
+							frameUpdate.PipePositions[i],
+							frameUpdate.PipePositions[i]+pipeWidth,
+							statePtr.world.PipeSpecs[closestPipe].GapStart,
+							statePtr.world.PipeSpecs[closestPipe].GapStart+statePtr.world.PipeSpecs[closestPipe].GapHeight,
+						)
+						statePtr.playState = Over
+						frameUpdate.GameOver = true
+					}
 
 				}
 
