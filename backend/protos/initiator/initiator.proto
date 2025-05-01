@@ -7,6 +7,8 @@ message StartGameReq {
     string jwt = 1;
     int32 viewport_width = 2;
     int32 viewport_height = 3;
+    int32 bird_width = 4;
+    int32 bird_height = 5;
 }
 
 message StartGameResp { string game_id = 1; }

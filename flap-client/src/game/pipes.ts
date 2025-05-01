@@ -12,10 +12,10 @@ export function createPipe(x: number, y: number, width: number, isUpper: boolean
 
 
     if (isUpper) {
-        pipeBody.style.bottom = '0';
+        pipeBody.style.top = '0';
         pipeBody.style.height = `${y}px`;
     } else {
-        pipeBody.style.top = '0';
+        pipeBody.style.bottom = '0';
         pipeBody.style.height = `${y}px`;
     }
 
@@ -52,7 +52,7 @@ export function updatePipes(pipePositions: number[], pipeStarts: number[], pipeG
         pipes.push(upperPipe);
 
         // Create lower pipe (gap of 90px between pipes)
-        const lowerPipeY = gameContainer!.clientHeight - start - gap - 112; // 112 is ground height
+        const lowerPipeY = gameContainer!.clientHeight - start - gap // - 112; // 112 is ground height
         const lowerPipe = createPipe(pos, lowerPipeY, pipeWidth, false);
         gameContainer!.appendChild(lowerPipe);
         pipes.push(lowerPipe);

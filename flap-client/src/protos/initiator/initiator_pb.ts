@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file protos/initiator/initiator.proto.
  */
 export const file_protos_initiator_initiator: GenFile = /*@__PURE__*/
-  fileDesc("CiBwcm90b3MvaW5pdGlhdG9yL2luaXRpYXRvci5wcm90bxIJaW5pdGlhdG9yIkwKDFN0YXJ0R2FtZVJlcRILCgNqd3QYASABKAkSFgoOdmlld3BvcnRfd2lkdGgYAiABKAUSFwoPdmlld3BvcnRfaGVpZ2h0GAMgASgFIiAKDVN0YXJ0R2FtZVJlc3ASDwoHZ2FtZV9pZBgBIAEoCTJUChBJbml0aWF0b3JTZXJ2aWNlEkAKCVN0YXJ0R2FtZRIXLmluaXRpYXRvci5TdGFydEdhbWVSZXEaGC5pbml0aWF0b3IuU3RhcnRHYW1lUmVzcCIAQhBaDi4vO2luaXRpYXRvcnBiYgZwcm90bzM");
+  fileDesc("CiBwcm90b3MvaW5pdGlhdG9yL2luaXRpYXRvci5wcm90bxIJaW5pdGlhdG9yInUKDFN0YXJ0R2FtZVJlcRILCgNqd3QYASABKAkSFgoOdmlld3BvcnRfd2lkdGgYAiABKAUSFwoPdmlld3BvcnRfaGVpZ2h0GAMgASgFEhIKCmJpcmRfd2lkdGgYBCABKAUSEwoLYmlyZF9oZWlnaHQYBSABKAUiIAoNU3RhcnRHYW1lUmVzcBIPCgdnYW1lX2lkGAEgASgJMlQKEEluaXRpYXRvclNlcnZpY2USQAoJU3RhcnRHYW1lEhcuaW5pdGlhdG9yLlN0YXJ0R2FtZVJlcRoYLmluaXRpYXRvci5TdGFydEdhbWVSZXNwIgBCEFoOLi87aW5pdGlhdG9ycGJiBnByb3RvMw");
 
 /**
  * @generated from message initiator.StartGameReq
@@ -30,6 +30,16 @@ export type StartGameReq = Message<"initiator.StartGameReq"> & {
    * @generated from field: int32 viewport_height = 3;
    */
   viewportHeight: number;
+
+  /**
+   * @generated from field: int32 bird_width = 4;
+   */
+  birdWidth: number;
+
+  /**
+   * @generated from field: int32 bird_height = 5;
+   */
+  birdHeight: number;
 };
 
 /**

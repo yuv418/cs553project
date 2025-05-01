@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file protos/frame_gen/frame_gen.proto.
  */
 export const file_protos_frame_gen_frame_gen: GenFile = /*@__PURE__*/
-  fileDesc("CiBwcm90b3MvZnJhbWVfZ2VuL2ZyYW1lX2dlbi5wcm90bxIJZnJhbWVfZ2VuIhsKA1BvcxIJCgF4GAEgASgBEgkKAXkYAiABKAEirQEKEEdlbmVyYXRlRnJhbWVSZXESDwoHZ2FtZV9pZBgBIAEoCRIlCg1iaXJkX3Bvc2l0aW9uGAIgASgLMg4uZnJhbWVfZ2VuLlBvcxIWCg5waXBlX3Bvc2l0aW9ucxgDIAMoARITCgtwaXBlX3N0YXJ0cxgEIAMoARIRCglwaXBlX2dhcHMYBSADKAESDQoFc2NvcmUYBiABKAUSEgoKcGlwZV93aWR0aBgHIAEoBSInChFHZW5lcmF0ZUZyYW1lUmVzcBISCgpmcmFtZV9kaWZmGAcgASgMMl8KD0ZyYW1lR2VuU2VydmljZRJMCg1HZW5lcmF0ZUZyYW1lEhsuZnJhbWVfZ2VuLkdlbmVyYXRlRnJhbWVSZXEaHC5mcmFtZV9nZW4uR2VuZXJhdGVGcmFtZVJlc3AiAEIPWg0uLztmcmFtZWdlbnBiYgZwcm90bzM");
+  fileDesc("CiBwcm90b3MvZnJhbWVfZ2VuL2ZyYW1lX2dlbi5wcm90bxIJZnJhbWVfZ2VuIhsKA1BvcxIJCgF4GAEgASgBEgkKAXkYAiABKAEiwAEKEEdlbmVyYXRlRnJhbWVSZXESDwoHZ2FtZV9pZBgBIAEoCRIlCg1iaXJkX3Bvc2l0aW9uGAIgASgLMg4uZnJhbWVfZ2VuLlBvcxIWCg5waXBlX3Bvc2l0aW9ucxgDIAMoARITCgtwaXBlX3N0YXJ0cxgEIAMoARIRCglwaXBlX2dhcHMYBSADKAESDQoFc2NvcmUYBiABKAUSEgoKcGlwZV93aWR0aBgHIAEoBRIRCglnYW1lX292ZXIYCCABKAgiJwoRR2VuZXJhdGVGcmFtZVJlc3ASEgoKZnJhbWVfZGlmZhgHIAEoDDJfCg9GcmFtZUdlblNlcnZpY2USTAoNR2VuZXJhdGVGcmFtZRIbLmZyYW1lX2dlbi5HZW5lcmF0ZUZyYW1lUmVxGhwuZnJhbWVfZ2VuLkdlbmVyYXRlRnJhbWVSZXNwIgBCD1oNLi87ZnJhbWVnZW5wYmIGcHJvdG8z");
 
 /**
  * @generated from message frame_gen.Pos
@@ -78,6 +78,11 @@ export type GenerateFrameReq = Message<"frame_gen.GenerateFrameReq"> & {
    * @generated from field: int32 pipe_width = 7;
    */
   pipeWidth: number;
+
+  /**
+   * @generated from field: bool game_over = 8;
+   */
+  gameOver: boolean;
 };
 
 /**
