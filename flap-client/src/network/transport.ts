@@ -11,7 +11,7 @@ import { playSound } from "../game/music";
 let gameWriter: WritableStreamDefaultWriter<any> | null = null;
 
 // TODO typing
-export async function startTransport(jwt: string, gameId: string, baseUrl: string, setupFn: any, schema: any, handler: any) {
+export async function startTransport(jwt: string, gameId: string, baseUrl: string, setupFn: any, cleanupFn: any, schema: any, handler: any) {
     try {
         const url = baseUrl + "?token=" + jwt + "&gameId=" + gameId;
         const transport = new WebTransport(url);
@@ -38,7 +38,7 @@ export async function startTransport(jwt: string, gameId: string, baseUrl: strin
             console.error('Error reading from stream:', e);
         } finally {
             console.log("Closing WebTransport stream")
-            cleanup(transport);
+            cleanup(transport, cleanupFn);
         }
     } catch (error) {
         console.error('Error with WebTransport:', error);
@@ -46,11 +46,40 @@ export async function startTransport(jwt: string, gameId: string, baseUrl: strin
 }
 
 export async function startMusicTransport(jwt: string, gameId: string) {
-    await startTransport(jwt, gameId, import.meta.env.VITE_WEBTRANSPORT_MUSIC_URL, (_: string) => {}, musicPb.PlayMusicRespSchema, playSound)
+    await startTransport(jwt,
+                         gameId,
+                         import.meta.env.VITE_WEBTRANSPORT_MUSIC_URL,
+                         (_: string) => {},
+                         () => {},
+                         musicPb.PlayMusicRespSchema,
+                         playSound)
 }
 
 export async function startGameTransport(jwt: string, gameId: string) {
-    await startTransport(jwt, gameId, import.meta.env.VITE_WEBTRANSPORT_GAME_URL, setupInputHandling, frameGen.GenerateFrameReqSchema, updateGameState)
+
+    let eventListenerEvent = async (event: KeyboardEvent) => {
+        if (event.code === 'Space' && gameWriter) {
+            event.preventDefault();
+            hideJumpInstruction();
+            await sendGameInput(gameId);
+        }
+    }
+
+    let setupInputHandling = (_: string) => {
+        document.addEventListener('keydown', eventListenerEvent);
+    };
+
+    let cleanup = () => {
+        document.removeEventListener('keydown', eventListenerEvent)
+    }
+
+    await startTransport(jwt,
+                         gameId,
+                         import.meta.env.VITE_WEBTRANSPORT_GAME_URL,
+                         setupInputHandling,
+                         cleanup,
+                         frameGen.GenerateFrameReqSchema,
+                         updateGameState)
 }
 
 async function sendGameInput(gameId: string) {
@@ -64,16 +93,6 @@ async function sendGameInput(gameId: string) {
     await gameWriter.write(inputBin);
 }
 
-function setupInputHandling(gameId: string) {
-    document.addEventListener('keydown', async (event) => {
-        if (event.code === 'Space' && gameWriter) {
-            event.preventDefault();
-            hideJumpInstruction();
-            await sendGameInput(gameId);
-        }
-    });
-}
-
 async function handleWTStream(stream: WebTransportBidirectionalStream, schema: any, msgHandler: any) {
     for await (const msg of sizeDelimitedDecodeStream(schema, stream.readable)) {
         if (import.meta.env.VITE_DEBUG) {
@@ -83,7 +102,7 @@ async function handleWTStream(stream: WebTransportBidirectionalStream, schema: a
     }
 }
 
-function cleanup(transport: WebTransport) {
+function cleanup(transport: WebTransport, cleanupFn: any) {
     if (gameWriter) {
         gameWriter.close();
         gameWriter = null;
@@ -98,6 +117,8 @@ function cleanup(transport: WebTransport) {
     if (!transport.closed) {
         transport.close();
     }
+
+    cleanupFn()
 
     if (import.meta.env.VITE_DEBUG) {
         console.log('WebTransport session closed');

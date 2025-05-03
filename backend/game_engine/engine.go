@@ -215,6 +215,7 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, handle *commondata.WebTra
 						birdX < frameUpdate.PipePositions[i]+pipeWidth &&
 						(statePtr.birdY <= statePtr.world.PipeSpecs[closestPipe].GapStart ||
 							statePtr.birdY >= statePtr.world.PipeSpecs[closestPipe].GapStart+statePtr.world.PipeSpecs[closestPipe].GapHeight) {
+
 						log.Printf(
 							"birdX %d, birdY %f, pipePos %f, pipePosEnd %f, GapStart %f, GapAfter %f Game over!",
 							birdX,
