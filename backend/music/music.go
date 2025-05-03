@@ -14,12 +14,11 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-//go:embed audio/wing.ogg
-//go:embed audio/point.ogg
-//go:embed audio/hit.ogg
-var musicFiles embed.FS
-
 var (
+	//go:embed audio/wing.ogg
+	//go:embed audio/point.ogg
+	//go:embed audio/hit.ogg
+	musicFiles      embed.FS
 	MusicServer     = newMusicServer()
 	MusicServerLock = sync.Mutex{}
 )
