@@ -1,0 +1,101 @@
+package music
+
+import (
+	"bufio"
+	"fmt"
+	"log"
+	"os"
+	"sync"
+
+	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/yuv418/cs553project/backend/common"
+	"github.com/yuv418/cs553project/backend/commondata"
+	musicpb "github.com/yuv418/cs553project/backend/protos/music"
+	"google.golang.org/protobuf/types/known/emptypb"
+)
+
+var (
+	MusicServer     = newMusicServer()
+	MusicServerLock = sync.Mutex{}
+)
+
+type musicServer struct {
+	soundFiles   map[musicpb.SoundEffect][]byte // Maps SoundEffect to WAV file paths
+	transportMap map[string]*bufio.Writer
+}
+
+// newMusicServer initializes the server with audio context and sound file mappings
+func newMusicServer() *musicServer {
+
+	// TODO: efficientize
+	wingBin, err := os.ReadFile("audio/wing.ogg")
+	if err != nil {
+		log.Panic("couldn't read audio/wing.ogg")
+	}
+	pointBin, err := os.ReadFile("audio/point.ogg")
+	if err != nil {
+		log.Panic("couldn't read audio/point.ogg")
+	}
+	hitBin, err := os.ReadFile("audio/hit.ogg")
+	if err != nil {
+		log.Panic("couldn't read audio/hitBin.ogg")
+	}
+
+	// Define mapping of SoundEffect enums to WAV file paths
+	soundFiles := map[musicpb.SoundEffect][]byte{
+		musicpb.SoundEffect_JUMP:            wingBin,  // Flap sound
+		musicpb.SoundEffect_SCORE_INCREASED: pointBin, // Score increment sound
+		musicpb.SoundEffect_DIE:             hitBin,   // Collision sound
+	}
+
+	return &musicServer{
+		soundFiles:   soundFiles,
+		transportMap: make(map[string]*bufio.Writer),
+	}
+}
+
+// loadSound reads a WAV file and creates a new audio.Player
+func EstablishMusicWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Writer) error {
+
+	// Acquire the WebTransport session for this username
+	// https://gobyexample.com/timers
+	// Somehow we want to pin this? Whatever
+
+	log.Printf("EstablishMusicWebTransport: user ID is %s game ID is %s\n", ctx.Username, ctx.GameId)
+
+	// https://stackoverflow.com/questions/16466320/is-there-a-way-to-do-repetitive-tasks-at-intervals
+
+	MusicServerLock.Lock()
+
+	MusicServer.transportMap[ctx.GameId] = transportWriter
+
+	MusicServerLock.Unlock()
+
+	return nil
+}
+
+// PlayMusic implements the PlayMusic RPC to play a sound effect
+func PlayMusic(ctx *commondata.ReqCtx, req *musicpb.PlayMusicReq) (*empty.Empty, error) {
+	// Log incoming request for debugging
+	log.Printf("Received PlayMusic request: game_id=%s, effect=%v", req.GameId, req.Effect)
+
+	MusicServerLock.Lock()
+	defer MusicServerLock.Unlock()
+
+	gameTransport := MusicServer.transportMap[ctx.GameId]
+	if gameTransport == nil {
+		return nil, fmt.Errorf("unknown game ID: %v", ctx.GameId)
+	}
+
+	// Look up the WAV file path for the requested sound effect
+	effectBin := MusicServer.soundFiles[req.Effect]
+	if effectBin == nil {
+		return nil, fmt.Errorf("unknown sound effect: %v", req.Effect)
+	}
+
+	respPb := &musicpb.PlayMusicResp{AudioPayload: effectBin}
+	common.WebTransportSendBuf(gameTransport, respPb)
+
+	// Return empty response (opus_payload is a placeholder for future streaming)
+	return &emptypb.Empty{}, nil
+}

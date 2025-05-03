@@ -1,6 +1,8 @@
 syntax = "proto3";
 
 package music;
+
+import "google/protobuf/empty.proto";
 option go_package = "./;musicpb";
 
 enum SoundEffect {
@@ -14,8 +16,8 @@ message PlayMusicReq {
     SoundEffect effect = 2;
 }
 
-message PlayMusicResp { bytes opus_payload = 1; }
+message PlayMusicResp { bytes audio_payload = 1; }
 
 service MusicService {
-    rpc PlayMusic(PlayMusicReq) returns (PlayMusicResp) {}
+    rpc PlayMusic(PlayMusicReq) returns (google.protobuf.Empty) {}
 }

@@ -10,4 +10,5 @@ func SetupTables(ctx *abstraction.AbstractionServer) {
 	SetupWorldgenTables(ctx)
 	SetupGameEngineTables(ctx)
 	SetupInitiatorTables(ctx)
+	SetupMusicTables(ctx)
 }

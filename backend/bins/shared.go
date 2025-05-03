@@ -5,14 +5,17 @@ import (
 	"os"
 
 	auth "github.com/yuv418/cs553project/backend/auth"
+	"github.com/yuv418/cs553project/backend/commondata"
 	engine "github.com/yuv418/cs553project/backend/game_engine"
 	"github.com/yuv418/cs553project/backend/initiator"
+	music "github.com/yuv418/cs553project/backend/music"
 	worldgen "github.com/yuv418/cs553project/backend/world_gen"
 
 	abstraction "github.com/yuv418/cs553project/backend/common"
 	authpb "github.com/yuv418/cs553project/backend/protos/auth"
 	enginepb "github.com/yuv418/cs553project/backend/protos/game_engine"
 	initiatorpb "github.com/yuv418/cs553project/backend/protos/initiator"
+	musicpb "github.com/yuv418/cs553project/backend/protos/music"
 	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
@@ -50,4 +53,20 @@ func SetupGameEngineTables(ctx *abstraction.AbstractionServer) {
 	// Any internal microservice functions don't have to be validated.
 	abstraction.InsertDispatchTable[enginepb.GameEngineStartReq, emptypb.Empty](abstraction.AbsCtx, "gameEngine", "EngineStartGame", engine.StartGame, false)
 	abstraction.AddWebTransportRoute[enginepb.GameEngineInputReq, *enginepb.GameEngineInputReq, emptypb.Empty, *emptypb.Empty](abstraction.AbsCtx.CommonServer, "/gameEngine/GameSession", engine.HandleInput, engine.EstablishGameWebTransport)
+}
+
+func SetupMusicTables(ctx *abstraction.AbstractionServer) {
+	abstraction.InsertServiceData(abstraction.AbsCtx, "music", os.Getenv("MUSIC_URL"), "/music.MusicService/PlayMusic")
+
+	// Any internal microservice functions don't have to be validated.
+	abstraction.InsertDispatchTable[musicpb.PlayMusicReq, emptypb.Empty](abstraction.AbsCtx, "music", "PlayMusic", music.PlayMusic, false)
+	// Stub out the handler function because it'll never be used.
+	abstraction.AddWebTransportRoute[emptypb.Empty, *emptypb.Empty, emptypb.Empty, *emptypb.Empty](
+		abstraction.AbsCtx.CommonServer,
+		"/music/MusicSession",
+		func(ctx *commondata.ReqCtx, inp *emptypb.Empty) (*emptypb.Empty, error) {
+			return &emptypb.Empty{}, nil
+		},
+		music.EstablishMusicWebTransport,
+	)
 }

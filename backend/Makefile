@@ -13,6 +13,9 @@ engine: game_engine.proto
 auth: auth.proto
 	go build -tags auth -o ./out/auth ./bins
 
+music: music.proto
+	go build -tags music -o ./out/music ./bins
+
 protos: auth.proto game_engine.proto world_gen.proto frame_gen.proto initiator.proto music.proto
 
 %.proto:
