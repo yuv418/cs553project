@@ -21,6 +21,9 @@ message GameEngineStartReq {
     int32 viewport_width = 3;
     int32 viewport_height = 4;
     world_gen.WorldGenerated world = 5;
+
+    int32 bird_width = 6;
+    int32 bird_height = 7;
 }
 
 // Won't do anything on failure other than reject the requests.

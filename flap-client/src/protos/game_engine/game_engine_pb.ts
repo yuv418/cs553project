@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file protos/game_engine/game_engine.proto.
  */
 export const file_protos_game_engine_game_engine: GenFile = /*@__PURE__*/
-  fileDesc("CiRwcm90b3MvZ2FtZV9lbmdpbmUvZ2FtZV9lbmdpbmUucHJvdG8SC2dhbWVfZW5naW5lIkQKEkdhbWVFbmdpbmVJbnB1dFJlcRIPCgdnYW1lX2lkGAIgASgJEh0KA2tleRgDIAEoDjIQLmdhbWVfZW5naW5lLktleSKAAQoSR2FtZUVuZ2luZVN0YXJ0UmVxEg8KB2dhbWVfaWQYAiABKAkSFgoOdmlld3BvcnRfd2lkdGgYAyABKAUSFwoPdmlld3BvcnRfaGVpZ2h0GAQgASgFEigKBXdvcmxkGAUgASgLMhkud29ybGRfZ2VuLldvcmxkR2VuZXJhdGVkKhAKA0tleRIJCgVTUEFDRRAAMqUBChFHYW1lRW5naW5lU2VydmljZRJICgtIYW5kbGVJbnB1dBIfLmdhbWVfZW5naW5lLkdhbWVFbmdpbmVJbnB1dFJlcRoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAEkYKCVN0YXJ0R2FtZRIfLmdhbWVfZW5naW5lLkdhbWVFbmdpbmVTdGFydFJlcRoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAQjtaOWdpdGh1Yi5jb20veXV2NDE4L2NzNTUzcHJvamVjdC9iYWNrZW5kL3Byb3Rvcy9nYW1lX2VuZ2luZWIGcHJvdG8z", [file_protos_world_gen_world_gen, file_google_protobuf_empty]);
+  fileDesc("CiRwcm90b3MvZ2FtZV9lbmdpbmUvZ2FtZV9lbmdpbmUucHJvdG8SC2dhbWVfZW5naW5lIkQKEkdhbWVFbmdpbmVJbnB1dFJlcRIPCgdnYW1lX2lkGAIgASgJEh0KA2tleRgDIAEoDjIQLmdhbWVfZW5naW5lLktleSKpAQoSR2FtZUVuZ2luZVN0YXJ0UmVxEg8KB2dhbWVfaWQYAiABKAkSFgoOdmlld3BvcnRfd2lkdGgYAyABKAUSFwoPdmlld3BvcnRfaGVpZ2h0GAQgASgFEigKBXdvcmxkGAUgASgLMhkud29ybGRfZ2VuLldvcmxkR2VuZXJhdGVkEhIKCmJpcmRfd2lkdGgYBiABKAUSEwoLYmlyZF9oZWlnaHQYByABKAUqEAoDS2V5EgkKBVNQQUNFEAAypQEKEUdhbWVFbmdpbmVTZXJ2aWNlEkgKC0hhbmRsZUlucHV0Eh8uZ2FtZV9lbmdpbmUuR2FtZUVuZ2luZUlucHV0UmVxGhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgASRgoJU3RhcnRHYW1lEh8uZ2FtZV9lbmdpbmUuR2FtZUVuZ2luZVN0YXJ0UmVxGhYuZ29vZ2xlLnByb3RvYnVmLkVtcHR5IgBCO1o5Z2l0aHViLmNvbS95dXY0MTgvY3M1NTNwcm9qZWN0L2JhY2tlbmQvcHJvdG9zL2dhbWVfZW5naW5lYgZwcm90bzM", [file_protos_world_gen_world_gen, file_google_protobuf_empty]);
 
 /**
  * @generated from message game_engine.GameEngineInputReq
@@ -61,6 +61,16 @@ export type GameEngineStartReq = Message<"game_engine.GameEngineStartReq"> & {
    * @generated from field: world_gen.WorldGenerated world = 5;
    */
   world?: WorldGenerated;
+
+  /**
+   * @generated from field: int32 bird_width = 6;
+   */
+  birdWidth: number;
+
+  /**
+   * @generated from field: int32 bird_height = 7;
+   */
+  birdHeight: number;
 };
 
 /**
