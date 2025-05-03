@@ -179,7 +179,7 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 	commonSrv *CommonServer,
 	route string,
 	handlerFn func(*commondata.ReqCtx, *Req) (*Res, error),
-	insertWebTransport func(*commondata.ReqCtx, *bufio.Writer) error,
+	insertWebTransport func(*commondata.ReqCtx, *commondata.WebTransportHandle) error,
 ) {
 
 	if commonSrv.wtpServer == nil {
@@ -227,7 +227,7 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 					byteReader := bufio.NewReader(stream)
 					byteWriter := bufio.NewWriter(stream)
 
-					insertWebTransport(reqCtx, byteWriter)
+					insertWebTransport(reqCtx, &commondata.WebTransportHandle{Writer: byteWriter, WtStream: &stream})
 
 					for {
 						err := protodelim.UnmarshalFrom(byteReader, buf)

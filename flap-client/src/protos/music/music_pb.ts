@@ -4,13 +4,15 @@
 
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv1";
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
+import type { EmptySchema } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_empty } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file protos/music/music.proto.
  */
 export const file_protos_music_music: GenFile = /*@__PURE__*/
-  fileDesc("Chhwcm90b3MvbXVzaWMvbXVzaWMucHJvdG8SBW11c2ljIkMKDFBsYXlNdXNpY1JlcRIPCgdnYW1lX2lkGAEgASgJEiIKBmVmZmVjdBgCIAEoDjISLm11c2ljLlNvdW5kRWZmZWN0IiUKDVBsYXlNdXNpY1Jlc3ASFAoMb3B1c19wYXlsb2FkGAEgASgMKjUKC1NvdW5kRWZmZWN0EggKBEpVTVAQABITCg9TQ09SRV9JTkNSRUFTRUQQARIHCgNESUUQAjJICgxNdXNpY1NlcnZpY2USOAoJUGxheU11c2ljEhMubXVzaWMuUGxheU11c2ljUmVxGhQubXVzaWMuUGxheU11c2ljUmVzcCIAQgxaCi4vO211c2ljcGJiBnByb3RvMw");
+  fileDesc("Chhwcm90b3MvbXVzaWMvbXVzaWMucHJvdG8SBW11c2ljIkMKDFBsYXlNdXNpY1JlcRIPCgdnYW1lX2lkGAEgASgJEiIKBmVmZmVjdBgCIAEoDjISLm11c2ljLlNvdW5kRWZmZWN0IiYKDVBsYXlNdXNpY1Jlc3ASFQoNYXVkaW9fcGF5bG9hZBgBIAEoDCo1CgtTb3VuZEVmZmVjdBIICgRKVU1QEAASEwoPU0NPUkVfSU5DUkVBU0VEEAESBwoDRElFEAIySgoMTXVzaWNTZXJ2aWNlEjoKCVBsYXlNdXNpYxITLm11c2ljLlBsYXlNdXNpY1JlcRoWLmdvb2dsZS5wcm90b2J1Zi5FbXB0eSIAQgxaCi4vO211c2ljcGJiBnByb3RvMw", [file_google_protobuf_empty]);
 
 /**
  * @generated from message music.PlayMusicReq
@@ -39,9 +41,9 @@ export const PlayMusicReqSchema: GenMessage<PlayMusicReq> = /*@__PURE__*/
  */
 export type PlayMusicResp = Message<"music.PlayMusicResp"> & {
   /**
-   * @generated from field: bytes opus_payload = 1;
+   * @generated from field: bytes audio_payload = 1;
    */
-  opusPayload: Uint8Array;
+  audioPayload: Uint8Array;
 };
 
 /**
@@ -87,7 +89,7 @@ export const MusicService: GenService<{
   playMusic: {
     methodKind: "unary";
     input: typeof PlayMusicReqSchema;
-    output: typeof PlayMusicRespSchema;
+    output: typeof EmptySchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_protos_music_music, 0);

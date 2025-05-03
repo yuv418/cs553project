@@ -11,10 +11,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/quic-go/webtransport-go"
 	"github.com/yuv418/cs553project/backend/common"
 	"github.com/yuv418/cs553project/backend/commondata"
 	framegenpb "github.com/yuv418/cs553project/backend/protos/frame_gen"
 	enginepb "github.com/yuv418/cs553project/backend/protos/game_engine"
+	musicpb "github.com/yuv418/cs553project/backend/protos/music"
 	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -118,7 +120,7 @@ func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*empty
 	return &emptypb.Empty{}, nil
 }
 
-func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Writer) error {
+func EstablishGameWebTransport(ctx *commondata.ReqCtx, handle *commondata.WebTransportHandle) error {
 
 	// Acquire the WebTransport session for this username
 	// https://gobyexample.com/timers
@@ -189,6 +191,14 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 						if statePtr.prevClosestPipe != closestPipe {
 							statePtr.score++
 							statePtr.prevClosestPipe = closestPipe
+
+							go (func() {
+								common.Dispatch[musicpb.PlayMusicReq, emptypb.Empty](ctx, "PlayMusic", &musicpb.PlayMusicReq{
+									GameId: gameId,
+									Effect: musicpb.SoundEffect_SCORE_INCREASED,
+								})
+
+							})()
 						}
 					} else {
 						closestPipe++
@@ -216,6 +226,18 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 						)
 						statePtr.playState = Over
 						frameUpdate.GameOver = true
+
+						// This should be an asynchronous call to avoid blocking the
+						// game engine
+						go (func() {
+							common.Dispatch[musicpb.PlayMusicReq, emptypb.Empty](ctx, "PlayMusic", &musicpb.PlayMusicReq{
+								GameId: gameId,
+								Effect: musicpb.SoundEffect_DIE,
+							})
+							// This will quit
+							quit <- struct{}{}
+						})()
+
 					}
 
 				}
@@ -228,9 +250,13 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Wr
 				frameUpdate.Score = statePtr.score
 				frameUpdate.BirdPosition.Y = statePtr.birdY
 
-				common.WebTransportSendBuf(transportWriter, frameUpdate)
+				common.WebTransportSendBuf(handle.Writer, frameUpdate)
 			case <-quit:
 				timer.Stop()
+
+				log.Printf("Closing game stream")
+				(*handle.WtStream.(*webtransport.Stream)).Close()
+
 				return
 			}
 
@@ -257,6 +283,13 @@ func HandleInput(ctx *commondata.ReqCtx, inp *enginepb.GameEngineInputReq) (*emp
 		}
 
 		GlobalStateLock.Unlock()
+
+		go (func() {
+			common.Dispatch[musicpb.PlayMusicReq, emptypb.Empty](ctx, "PlayMusic", &musicpb.PlayMusicReq{
+				GameId: ctx.GameId,
+				Effect: musicpb.SoundEffect_JUMP,
+			})
+		})()
 		break
 	default:
 		fmt.Fprintf(os.Stderr, "invalid key in Key enum %d\n", inp.Key)

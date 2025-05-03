@@ -1,6 +1,6 @@
 import { AuthResponse } from '../protos/auth/auth_pb';
 import { decodeToken, initiatorClient, isLoggedIn } from '../auth/auth';
-import { startGameTransport } from '../network/transport';
+import { startGameTransport, startMusicTransport } from '../network/transport';
 import { setupLoginForm } from '../auth/form';
 import { birdSprites, getBirdSize } from './bird';
 
@@ -108,7 +108,10 @@ export async function startGame(response: AuthResponse) {
         if (startGameResponse.gameId) {
             hideJumpInstruction();
             hideLoginContainer();
-            await startGameTransport(response.jwtToken, startGameResponse.gameId);
+
+            // This blocks!
+            setTimeout(async () => { await startGameTransport(response.jwtToken, startGameResponse.gameId) });
+            await startMusicTransport(response.jwtToken, startGameResponse.gameId);
         }
     } catch (error) {
         console.error('Failed to start game:', error);

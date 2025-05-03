@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { sizeDelimitedEncode, sizeDelimitedDecodeStream } from "@bufbuild/protobuf/wire";
 import * as engine from '../protos/game_engine/game_engine_pb';
 import * as frameGen from '../protos/frame_gen/frame_gen_pb';
+import * as musicPb from '../protos/music/music_pb';
 import { updateGameState } from '../game/state';
 import { resetBird } from '../game/bird';
 import { updateGameVisuals, hideJumpInstruction } from '../game/ui';
@@ -10,7 +11,7 @@ import { playSound } from "../game/music";
 let gameWriter: WritableStreamDefaultWriter<any> | null = null;
 
 // TODO typing
-export async function startTransport(jwt: string, gameId: string, baseUrl: string, setupFn: any, handler: any) {
+export async function startTransport(jwt: string, gameId: string, baseUrl: string, setupFn: any, schema: any, handler: any) {
     try {
         const url = baseUrl + "?token=" + jwt + "&gameId=" + gameId;
         const transport = new WebTransport(url);
@@ -32,10 +33,11 @@ export async function startTransport(jwt: string, gameId: string, baseUrl: strin
         setupFn(gameId);
 
         try {
-            await handleWTStream(stream, handler);
+            await handleWTStream(stream, schema, handler);
         } catch (e) {
             console.error('Error reading from stream:', e);
         } finally {
+            console.log("Closing WebTransport stream")
             cleanup(transport);
         }
     } catch (error) {
@@ -44,11 +46,11 @@ export async function startTransport(jwt: string, gameId: string, baseUrl: strin
 }
 
 export async function startMusicTransport(jwt: string, gameId: string) {
-    await startTransport(jwt, gameId, import.meta.env.VITE_WEBTRANSPORT_MUSIC_URL, (_: string) => {}, playSound)
+    await startTransport(jwt, gameId, import.meta.env.VITE_WEBTRANSPORT_MUSIC_URL, (_: string) => {}, musicPb.PlayMusicRespSchema, playSound)
 }
 
 export async function startGameTransport(jwt: string, gameId: string) {
-    await startTransport(jwt, gameId, import.meta.env.VITE_WEBTRANSPORT_GAME_URL, setupInputHandling, updateGameState)
+    await startTransport(jwt, gameId, import.meta.env.VITE_WEBTRANSPORT_GAME_URL, setupInputHandling, frameGen.GenerateFrameReqSchema, updateGameState)
 }
 
 async function sendGameInput(gameId: string) {
@@ -72,8 +74,8 @@ function setupInputHandling(gameId: string) {
     });
 }
 
-async function handleWTStream(stream: WebTransportBidirectionalStream, msgHandler: any) {
-    for await (const msg of sizeDelimitedDecodeStream(frameGen.GenerateFrameReqSchema, stream.readable)) {
+async function handleWTStream(stream: WebTransportBidirectionalStream, schema: any, msgHandler: any) {
+    for await (const msg of sizeDelimitedDecodeStream(schema, stream.readable)) {
         if (import.meta.env.VITE_DEBUG) {
             console.log('Received game state update:', msg);
         }
@@ -93,7 +95,9 @@ function cleanup(transport: WebTransport) {
         console.log('Stream closed');
     }
 
-    transport.close();
+    if (!transport.closed) {
+        transport.close();
+    }
 
     if (import.meta.env.VITE_DEBUG) {
         console.log('WebTransport session closed');

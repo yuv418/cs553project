@@ -1,13 +1,14 @@
 package music
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"sync"
 
 	"embed"
+
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/quic-go/webtransport-go"
 	"github.com/yuv418/cs553project/backend/common"
 	"github.com/yuv418/cs553project/backend/commondata"
 	musicpb "github.com/yuv418/cs553project/backend/protos/music"
@@ -25,7 +26,7 @@ var (
 
 type musicServer struct {
 	soundFiles   map[musicpb.SoundEffect][]byte // Maps SoundEffect to WAV file paths
-	transportMap map[string]*bufio.Writer
+	transportMap map[string]*commondata.WebTransportHandle
 }
 
 // newMusicServer initializes the server with audio context and sound file mappings
@@ -54,12 +55,12 @@ func newMusicServer() *musicServer {
 
 	return &musicServer{
 		soundFiles:   soundFiles,
-		transportMap: make(map[string]*bufio.Writer),
+		transportMap: make(map[string]*commondata.WebTransportHandle),
 	}
 }
 
 // loadSound reads a WAV file and creates a new audio.Player
-func EstablishMusicWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.Writer) error {
+func EstablishMusicWebTransport(ctx *commondata.ReqCtx, handle *commondata.WebTransportHandle) error {
 
 	// Acquire the WebTransport session for this username
 	// https://gobyexample.com/timers
@@ -71,7 +72,7 @@ func EstablishMusicWebTransport(ctx *commondata.ReqCtx, transportWriter *bufio.W
 
 	MusicServerLock.Lock()
 
-	MusicServer.transportMap[ctx.GameId] = transportWriter
+	MusicServer.transportMap[ctx.GameId] = handle
 
 	MusicServerLock.Unlock()
 
@@ -98,7 +99,13 @@ func PlayMusic(ctx *commondata.ReqCtx, req *musicpb.PlayMusicReq) (*empty.Empty,
 	}
 
 	respPb := &musicpb.PlayMusicResp{AudioPayload: effectBin}
-	common.WebTransportSendBuf(gameTransport, respPb)
+	common.WebTransportSendBuf(gameTransport.Writer, respPb)
+
+	// Close stream if this is a DIE message
+	if req.Effect == musicpb.SoundEffect_DIE {
+		log.Printf("Closing audio stream")
+		(*gameTransport.WtStream.(*webtransport.Stream)).Close()
+	}
 
 	// Return empty response (opus_payload is a placeholder for future streaming)
 	return &emptypb.Empty{}, nil
