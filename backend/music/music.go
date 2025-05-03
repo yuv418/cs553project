@@ -4,15 +4,20 @@ import (
 	"bufio"
 	"fmt"
 	"log"
-	"os"
 	"sync"
 
+	"embed"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/yuv418/cs553project/backend/common"
 	"github.com/yuv418/cs553project/backend/commondata"
 	musicpb "github.com/yuv418/cs553project/backend/protos/music"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
+
+//go:embed audio/wing.ogg
+//go:embed audio/point.ogg
+//go:embed audio/hit.ogg
+var musicFiles embed.FS
 
 var (
 	MusicServer     = newMusicServer()
@@ -28,15 +33,15 @@ type musicServer struct {
 func newMusicServer() *musicServer {
 
 	// TODO: efficientize
-	wingBin, err := os.ReadFile("audio/wing.ogg")
+	wingBin, err := musicFiles.ReadFile("audio/wing.ogg")
 	if err != nil {
-		log.Panic("couldn't read audio/wing.ogg")
+		log.Panic("couldn't read wing.ogg")
 	}
-	pointBin, err := os.ReadFile("audio/point.ogg")
+	pointBin, err := musicFiles.ReadFile("audio/point.ogg")
 	if err != nil {
 		log.Panic("couldn't read audio/point.ogg")
 	}
-	hitBin, err := os.ReadFile("audio/hit.ogg")
+	hitBin, err := musicFiles.ReadFile("audio/hit.ogg")
 	if err != nil {
 		log.Panic("couldn't read audio/hitBin.ogg")
 	}
