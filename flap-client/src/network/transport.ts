@@ -5,12 +5,14 @@ import * as frameGen from '../protos/frame_gen/frame_gen_pb';
 import { updateGameState } from '../game/state';
 import { resetBird } from '../game/bird';
 import { updateGameVisuals, hideJumpInstruction } from '../game/ui';
+import { playSound } from "../game/music";
 
 let gameWriter: WritableStreamDefaultWriter<any> | null = null;
 
-export async function startGameTransport(jwt: string, gameId: string) {
+// TODO typing
+export async function startTransport(jwt: string, gameId: string, baseUrl: string, setupFn: any, handler: any) {
     try {
-        const url = import.meta.env.VITE_WEBTRANSPORT_URL + "?token=" + jwt + "&gameId=" + gameId;
+        const url = baseUrl + "?token=" + jwt + "&gameId=" + gameId;
         const transport = new WebTransport(url);
 
         await transport.ready;
@@ -18,7 +20,7 @@ export async function startGameTransport(jwt: string, gameId: string) {
 
         const stream = await transport.createBidirectionalStream();
         gameWriter = stream.writable.getWriter();
-        
+
         // Send initial input
         await sendGameInput(gameId);
 
@@ -27,10 +29,10 @@ export async function startGameTransport(jwt: string, gameId: string) {
         }
 
         // Set up space bar event listener
-        setupInputHandling(gameId);
+        setupFn(gameId);
 
         try {
-            await handleGameStream(stream);
+            await handleWTStream(stream, handler);
         } catch (e) {
             console.error('Error reading from stream:', e);
         } finally {
@@ -39,6 +41,14 @@ export async function startGameTransport(jwt: string, gameId: string) {
     } catch (error) {
         console.error('Error with WebTransport:', error);
     }
+}
+
+export async function startMusicTransport(jwt: string, gameId: string) {
+    await startTransport(jwt, gameId, import.meta.env.VITE_WEBTRANSPORT_MUSIC_URL, (_: string) => {}, playSound)
+}
+
+export async function startGameTransport(jwt: string, gameId: string) {
+    await startTransport(jwt, gameId, import.meta.env.VITE_WEBTRANSPORT_GAME_URL, setupInputHandling, updateGameState)
 }
 
 async function sendGameInput(gameId: string) {
@@ -62,12 +72,12 @@ function setupInputHandling(gameId: string) {
     });
 }
 
-async function handleGameStream(stream: WebTransportBidirectionalStream) {
+async function handleWTStream(stream: WebTransportBidirectionalStream, msgHandler: any) {
     for await (const msg of sizeDelimitedDecodeStream(frameGen.GenerateFrameReqSchema, stream.readable)) {
         if (import.meta.env.VITE_DEBUG) {
             console.log('Received game state update:', msg);
         }
-        updateGameState(msg);
+        msgHandler(msg);
     }
 }
 
