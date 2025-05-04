@@ -57,8 +57,8 @@ func LoadSrvCfg() (*SrvCfg, error) {
 
 	flag.StringVar(&cfg.ListenAddr, "addr", getEnv("AUTH_LISTEN_ADDR", ":50051"), "gRPC server listen address")
 	flag.StringVar(&cfg.WtpListenAddr, "wtp-addr", getEnv("AUTH_LISTEN_WTP_ADDR", ":4433"), "Webtransport server listen address")
-	flag.StringVar(&cfg.CertFile, "cert", getEnv("AUTH_CERT_FILE", "../transport-server-demo/cert.pem"), "TLS certificate file path") // Default relative path
-	flag.StringVar(&cfg.KeyFile, "key", getEnv("AUTH_KEY_FILE", "../transport-server-demo/key.pem"), "TLS key file path")             // Default relative path
+	flag.StringVar(&cfg.CertFile, "cert", getEnv("AUTH_CERT_FILE", "../certs/cert.pem"), "TLS certificate file path") // Default relative path
+	flag.StringVar(&cfg.KeyFile, "key", getEnv("AUTH_KEY_FILE", "../certs/key.pem"), "TLS key file path")             // Default relative path
 	flag.StringVar(&cfg.JWTSecret, "jwt-secret", getEnv("AUTH_JWT_SECRET", "your-super-secret-key"), "Secret key for signing JWTs and encrypting passwords")
 	flag.Parse()
 
@@ -86,7 +86,7 @@ func NewCommonServer() *CommonServer {
 	commonSrv.mux = http.NewServeMux()
 
 	corsHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		w.Header().Set("Access-Control-Allow-Origin", "*") // Secure enough!
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization, Connect-Protocol-Version")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")

@@ -1,0 +1,170 @@
+services:
+  # Monolith mode
+  monolith:
+    build:
+      context: ./
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE: monolith
+    environment:
+      - MICROSERVICE=0
+      - AUTH_URL=localhost:50051
+      - WORLD_GEN_URL=localhost:50051
+      - INITIATOR_URL=localhost:50051
+      - GAME_ENGINE_URL=localhost:50051
+      - MUSIC_URL=localhost:50051
+      - SCORE_URL=localhost:50051
+      - AUTH_CERT_FILE=/app/cert.pem
+      - AUTH_KEY_FILE=/app/key.pem
+    ports:
+      - "50051:50051/tcp"
+      - "4433:4433/tcp"
+      - "4433:4433/udp"
+    volumes:
+      - ./backend/score.json:/app/score.json
+      - ./backend/users.json:/app/users.json
+      - ./certs/cert.pem:/app/cert.pem
+      - ./certs/key.pem:/app/key.pem
+    profiles:
+      - monolith
+  
+  # Microservices mode - single host
+  auth:
+    build:
+      context: ./
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE: auth
+    environment:
+      - MICROSERVICE=1
+      - AUTH_LISTEN_ADDR=:50051
+      - AUTH_CERT_FILE=/app/cert.pem
+      - AUTH_KEY_FILE=/app/key.pem
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./backend/users.json:/app/users.json
+      - ./certs/cert.pem:/app/cert.pem
+      - ./certs/key.pem:/app/key.pem
+    profiles:
+      - microservices
+  
+  worldgen:
+    build:
+      context: ./
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE: worldgen
+    environment:
+      - MICROSERVICE=1
+      - AUTH_LISTEN_ADDR=:50052
+      - AUTH_CERT_FILE=/app/cert.pem
+      - AUTH_KEY_FILE=/app/key.pem
+    ports:
+      - "50052:50052"
+    profiles:
+      - microservices
+  
+  engine:
+    build:
+      context: ./
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE: engine
+    environment:
+      - MICROSERVICE=1
+      - WORLD_GEN_URL=worldgen:50052
+      - AUTH_LISTEN_ADDR=:50053
+      - AUTH_CERT_FILE=/app/cert.pem
+      - AUTH_KEY_FILE=/app/key.pem
+    ports:
+      - "50053:50053/tcp"
+      - "4433:4433/tcp"
+      - "4433:4433/udp"
+    volumes:
+      - ./certs/cert.pem:/app/cert.pem
+      - ./certs/key.pem:/app/key.pem
+    depends_on:
+      - worldgen
+    profiles:
+      - microservices
+  
+  initiator:
+    build:
+      context: ./
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE: initiator
+    environment:
+      - MICROSERVICE=1
+      - AUTH_LISTEN_ADDR=:50054
+      - WORLD_GEN_URL=worldgen:50052
+      - GAME_ENGINE_URL=engine:50053
+      - INITIATOR_URL=initiator:50054
+      - AUTH_CERT_FILE=/app/cert.pem
+      - AUTH_KEY_FILE=/app/key.pem
+    ports:
+      - "50054:50054"
+    volumes:
+      - ./certs/cert.pem:/app/cert.pem
+      - ./certs/key.pem:/app/key.pem
+    depends_on:
+      - engine
+      - worldgen
+    profiles:
+      - microservices
+  
+  music:
+    build:
+      context: ./
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE: music
+    environment:
+      - MICROSERVICE=1
+      - AUTH_LISTEN_ADDR=:50055
+      - AUTH_CERT_FILE=/app/cert.pem
+      - AUTH_KEY_FILE=/app/key.pem
+    ports:
+      - "50055:50055/tcp"
+      - "4434:4433/tcp"
+      - "4434:4433/udp"
+    volumes:
+      - ./certs/cert.pem:/app/cert.pem
+      - ./certs/key.pem:/app/key.pem
+    profiles:
+      - microservices
+  
+  score:
+    build:
+      context: ./
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE: score
+    environment:
+      - MICROSERVICE=1
+      - AUTH_LISTEN_ADDR=:50056
+      - AUTH_CERT_FILE=/app/cert.pem
+      - AUTH_KEY_FILE=/app/key.pem
+    ports:
+      - "50056:50056"
+    volumes:
+      - ./backend/score.json:/app/score.json
+      - ./certs/cert.pem:/app/cert.pem
+      - ./certs/key.pem:/app/key.pem
+    profiles:
+      - microservices
+  
+  client:
+    build:
+      context: ./
+      dockerfile: flap-client/Dockerfile
+      args:
+        DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-monolith}
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+    profiles:
+      - monolith
+      - microservices
