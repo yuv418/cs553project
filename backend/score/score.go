@@ -28,6 +28,13 @@ type ScoreCtx struct {
 func LoadScoreCtx() (*ScoreCtx, error) {
 	scoreFileName := common.GetEnv("SCORE_FILE", "score.json")
 	scoreFile, err := os.OpenFile(scoreFileName, os.O_RDWR, 0)
+
+	ctx := &ScoreCtx{}
+	ctx.globalHeap = binaryheap.NewWith(func(a, b interface{}) int {
+		// Max heap
+		return int(b.(*scorepb.ScoreEntry).Score - a.(*scorepb.ScoreEntry).Score)
+	})
+
 	if err != nil && os.IsNotExist(err) {
 		// Doesn't exist, try to make it
 		scoreFile, err = os.Create(scoreFileName)
@@ -35,10 +42,8 @@ func LoadScoreCtx() (*ScoreCtx, error) {
 			return nil, err
 		}
 
-		ctx := &ScoreCtx{
-			jsonFile: scoreFile,
-			data:     make(map[string][]*scorepb.ScoreEntry),
-		}
+		ctx.jsonFile = scoreFile
+		ctx.data = make(map[string][]*scorepb.ScoreEntry)
 
 		// Initial write
 		err := ctx.WriteScores()
@@ -50,9 +55,7 @@ func LoadScoreCtx() (*ScoreCtx, error) {
 
 	} else if err == nil {
 		// Exists it, read
-		ctx := &ScoreCtx{
-			jsonFile: scoreFile,
-		}
+		ctx.jsonFile = scoreFile
 
 		data, err := io.ReadAll(ctx.jsonFile)
 		if err != nil {
@@ -64,10 +67,6 @@ func LoadScoreCtx() (*ScoreCtx, error) {
 		}
 
 		// Load ordered data
-		ctx.globalHeap = binaryheap.NewWith(func(a, b interface{}) int {
-			// Max heap
-			return int(b.(*scorepb.ScoreEntry).Score - a.(*scorepb.ScoreEntry).Score)
-		})
 
 		// https://bitfieldconsulting.com/posts/map-iteration
 		for k, entries := range ctx.data {
@@ -117,6 +116,8 @@ func (ctx *ScoreCtx) UpdateScore(reqCtx *commondata.ReqCtx, req *scorepb.ScoreEn
 	}
 
 	req.Username = &reqCtx.Username
+
+	// Note there may be a bug here?
 	ctx.globalHeap.Push(req)
 
 	return &emptypb.Empty{}, nil
@@ -133,7 +134,7 @@ func (ctx *ScoreCtx) GetScores(reqCtx *commondata.ReqCtx, _ *emptypb.Empty) (*sc
 	// https://stackoverflow.com/questions/21950244/is-there-a-way-to-iterate-over-a-range-of-integers
 	for it.Next() && i < 5 {
 		globalEntries = append(globalEntries, it.Value().(*scorepb.ScoreEntry))
-
+		i++
 	}
 
 	return &scorepb.GetScoresResp{
