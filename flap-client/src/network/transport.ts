@@ -5,7 +5,7 @@ import * as frameGen from '../protos/frame_gen/frame_gen_pb';
 import * as musicPb from '../protos/music/music_pb';
 import { updateGameState } from '../game/state';
 import { resetBird } from '../game/bird';
-import { updateGameVisuals, hideJumpInstruction } from '../game/ui';
+import { hideJumpInstruction } from '../game/ui';
 import { playSound } from "../game/music";
 
 let gameWriter: WritableStreamDefaultWriter<any> | null = null;
@@ -95,6 +95,8 @@ async function sendGameInput(gameId: string) {
 }
 
 async function handleWTStream(jwt: string, stream: WebTransportBidirectionalStream, schema: any, msgHandler: any) {
+
+    // @ts-ignore
     for await (const msg of sizeDelimitedDecodeStream(schema, stream.readable)) {
         if (import.meta.env.VITE_DEBUG) {
             console.log('Received game state update:', msg);
