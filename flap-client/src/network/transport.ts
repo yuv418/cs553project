@@ -33,7 +33,7 @@ export async function startTransport(jwt: string, gameId: string, baseUrl: strin
         setupFn(gameId);
 
         try {
-            await handleWTStream(stream, schema, handler);
+            await handleWTStream(jwt, stream, schema, handler);
         } catch (e) {
             console.error('Error reading from stream:', e);
         } finally {
@@ -94,12 +94,12 @@ async function sendGameInput(gameId: string) {
     await gameWriter.write(inputBin);
 }
 
-async function handleWTStream(stream: WebTransportBidirectionalStream, schema: any, msgHandler: any) {
+async function handleWTStream(jwt: string, stream: WebTransportBidirectionalStream, schema: any, msgHandler: any) {
     for await (const msg of sizeDelimitedDecodeStream(schema, stream.readable)) {
         if (import.meta.env.VITE_DEBUG) {
             console.log('Received game state update:', msg);
         }
-        msgHandler(msg);
+        msgHandler(jwt, msg);
     }
 }
 

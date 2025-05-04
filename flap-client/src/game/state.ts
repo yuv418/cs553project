@@ -3,11 +3,11 @@ import { updateBirdPosition } from './bird';
 import { updatePipes } from './pipes';
 import { showGameOverScreen, updateScore } from './ui';
 
-export function updateGameState(frame: GenerateFrameReq) {
+export function updateGameState(jwt: string, frame: GenerateFrameReq) {
 
     // Update game state
     if (frame.gameOver) {
-        showGameOverScreen();
+        showGameOverScreen(jwt);
         return;
     }
 

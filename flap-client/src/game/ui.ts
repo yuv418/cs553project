@@ -3,6 +3,7 @@ import { decodeToken, initiatorClient, isLoggedIn } from '../auth/auth';
 import { startGameTransport, startMusicTransport } from '../network/transport';
 import { setupLoginForm } from '../auth/form';
 import { birdSprites, getBirdSize } from './bird';
+import { scoreClient } from './score';
 
 let gameContainer: HTMLElement | null = null;
 let score = 0;
@@ -32,30 +33,36 @@ export function showJumpInstruction() {
     }
 }
 
-export function showGameOverScreen() {
+export function showGameOverScreen(jwt: string) {
     // Get local score history and global score history
 
-    const gameOverScreen = document.getElementById('game-over');
-    if (gameOverScreen instanceof HTMLElement) {
-        gameOverScreen.style.display = 'block';
-        const scoreElement = document.getElementById('final-score');
-        if (scoreElement) {
-            scoreElement.textContent = score.toString();
-        }
+    scoreClient.getScores({}, { headers: {
+                "Authorization": `Bearer ${jwt}`
+    }}).then((resp) => {
+        console.log(resp)
+        const gameOverScreen = document.getElementById('game-over');
+        if (gameOverScreen instanceof HTMLElement) {
+            gameOverScreen.style.display = 'block';
+            const scoreElement = document.getElementById('final-score');
+            if (scoreElement) {
+                scoreElement.textContent = score.toString();
+            }
 
-        const restartButton = document.getElementById('restart-button');
-        if (restartButton instanceof HTMLButtonElement) {
-            restartButton.addEventListener('click', () => {
-                initializeUI();
-            }, { once: true });
-            document.addEventListener('keydown', (event) => {
-                if (event.code === 'Space') {
-                    event.preventDefault();
-                    restartButton.click();
-                }
-            }, { once: true });
+            const restartButton = document.getElementById('restart-button');
+            if (restartButton instanceof HTMLButtonElement) {
+                restartButton.addEventListener('click', () => {
+                    initializeUI();
+                }, { once: true });
+                document.addEventListener('keydown', (event) => {
+                    if (event.code === 'Space') {
+                        event.preventDefault();
+                        restartButton.click();
+                    }
+                }, { once: true });
+            }
         }
-    }
+    })
+
 }
 
 export function hideGameOverScreen() {
