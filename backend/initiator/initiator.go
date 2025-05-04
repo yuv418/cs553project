@@ -35,6 +35,8 @@ func StartGame(ctx *commondata.ReqCtx, req *initiatorpb.StartGameReq) (*initiato
 		GameId:         gameId,
 		ViewportWidth:  req.ViewportWidth,
 		ViewportHeight: req.ViewportHeight,
+		BirdWidth:      req.BirdWidth,
+		BirdHeight:     req.BirdHeight,
 		World:          generatedWorld,
 	})
 	if err != nil {

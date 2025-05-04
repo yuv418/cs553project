@@ -60,6 +60,8 @@ type IndividualGameState struct {
 	pipePositions   []float64
 	pipeGaps        []float64
 	prevClosestPipe int
+	birdWidth       float64
+	birdHeight      float64
 }
 
 type GameState struct {
@@ -111,6 +113,8 @@ func StartGame(ctx *commondata.ReqCtx, req *enginepb.GameEngineStartReq) (*empty
 		// Admittedly this could be better
 		pipesToRender:   int(float64(req.ViewportWidth)*float64(3)) / (pipeWidth + int(req.World.PipeSpacing)),
 		prevClosestPipe: 0,
+		birdWidth:       float64(req.BirdWidth),
+		birdHeight:      float64(req.BirdHeight),
 	}
 
 	GlobalState.individualStateMap[req.GameId] = game
@@ -211,10 +215,12 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, handle *commondata.WebTra
 					frameUpdate.PipeGaps[i] = statePtr.world.PipeSpecs[closestPipe].GapHeight
 					frameUpdate.PipeStarts[i] = statePtr.world.PipeSpecs[closestPipe].GapStart
 
-					if birdX > frameUpdate.PipePositions[i] &&
-						birdX < frameUpdate.PipePositions[i]+pipeWidth &&
-						(statePtr.birdY <= statePtr.world.PipeSpecs[closestPipe].GapStart ||
-							statePtr.birdY >= statePtr.world.PipeSpecs[closestPipe].GapStart+statePtr.world.PipeSpecs[closestPipe].GapHeight) {
+					if ((birdX > frameUpdate.PipePositions[i] &&
+						birdX < frameUpdate.PipePositions[i]+pipeWidth) ||
+						(birdX+statePtr.birdWidth > frameUpdate.PipePositions[i] &&
+							birdX < frameUpdate.PipePositions[i]+pipeWidth)) &&
+						(statePtr.birdY < statePtr.world.PipeSpecs[closestPipe].GapStart ||
+							statePtr.birdY+statePtr.birdHeight > statePtr.world.PipeSpecs[closestPipe].GapStart+statePtr.world.PipeSpecs[closestPipe].GapHeight) {
 
 						log.Printf(
 							"birdX %d, birdY %f, pipePos %f, pipePosEnd %f, GapStart %f, GapAfter %f Game over!",

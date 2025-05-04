@@ -70,6 +70,7 @@ export async function startGameTransport(jwt: string, gameId: string) {
     };
 
     let cleanup = () => {
+        // https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/removeEventListener#matching_event_listeners_for_removal
         document.removeEventListener('keydown', eventListenerEvent)
     }
 
