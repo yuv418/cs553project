@@ -12,9 +12,13 @@ message ScoreEntry {
     string game_id = 1;
     int32 score = 2;
     google.protobuf.Timestamp finish_time = 3;
+    optional string username = 4;
 }
 
-message GetScoresResp { repeated ScoreEntry entries = 2; }
+message GetScoresResp {
+    repeated ScoreEntry entries = 1;
+    repeated ScoreEntry global_entries = 2;
+}
 
 service ScoreService {
     rpc UpdateScore(ScoreEntry) returns (google.protobuf.Empty) {}

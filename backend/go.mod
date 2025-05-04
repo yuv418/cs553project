@@ -12,6 +12,7 @@ require (
 
 require (
 	connectrpc.com/connect v1.18.1
+	github.com/emirpasic/gods v1.18.1
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/google/pprof v0.0.0-20230821062121-407c9e7a662f // indirect
 	github.com/google/uuid v1.6.0

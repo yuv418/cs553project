@@ -33,6 +33,8 @@ export function showJumpInstruction() {
 }
 
 export function showGameOverScreen() {
+    // Get local score history and global score history
+
     const gameOverScreen = document.getElementById('game-over');
     if (gameOverScreen instanceof HTMLElement) {
         gameOverScreen.style.display = 'block';

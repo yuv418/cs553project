@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/emirpasic/gods/trees/binaryheap"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/yuv418/cs553project/backend/common"
 	"github.com/yuv418/cs553project/backend/commondata"
@@ -20,7 +21,8 @@ import (
 type ScoreCtx struct {
 	jsonFile *os.File
 	// game id -> entry
-	data map[string][]*scorepb.ScoreEntry
+	data       map[string][]*scorepb.ScoreEntry
+	globalHeap *binaryheap.Heap
 }
 
 func LoadScoreCtx() (*ScoreCtx, error) {
@@ -33,10 +35,19 @@ func LoadScoreCtx() (*ScoreCtx, error) {
 			return nil, err
 		}
 
-		return &ScoreCtx{
+		ctx := &ScoreCtx{
 			jsonFile: scoreFile,
 			data:     make(map[string][]*scorepb.ScoreEntry),
-		}, nil
+		}
+
+		// Initial write
+		err := ctx.WriteScores()
+		if err != nil {
+			return nil, err
+		}
+
+		return ctx, nil
+
 	} else if err == nil {
 		// Exists it, read
 		ctx := &ScoreCtx{
@@ -52,6 +63,20 @@ func LoadScoreCtx() (*ScoreCtx, error) {
 			return nil, err
 		}
 
+		// Load ordered data
+		ctx.globalHeap = binaryheap.NewWith(func(a, b interface{}) int {
+			// Max heap
+			return int(b.(*scorepb.ScoreEntry).Score - a.(*scorepb.ScoreEntry).Score)
+		})
+
+		// https://bitfieldconsulting.com/posts/map-iteration
+		for k, entries := range ctx.data {
+			for _, entry := range entries {
+				entry.Username = &k
+				ctx.globalHeap.Push(entry)
+			}
+		}
+
 		return ctx, nil
 	} else {
 		// Some other error
@@ -60,16 +85,11 @@ func LoadScoreCtx() (*ScoreCtx, error) {
 
 }
 
-func (ctx *ScoreCtx) UpdateScore(reqCtx *commondata.ReqCtx, req *scorepb.ScoreEntry) (*empty.Empty, error) {
-	log.Printf("(UpdateScore) Received request for %v\n", req)
-
-	// Set
-	ctx.data[reqCtx.Username] = append(ctx.data[reqCtx.Username], req)
-
+func (ctx *ScoreCtx) WriteScores() error {
 	// Write to file
 	out, err := json.Marshal(ctx.data)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	ctx.jsonFile.Truncate(0)
@@ -78,8 +98,26 @@ func (ctx *ScoreCtx) UpdateScore(reqCtx *commondata.ReqCtx, req *scorepb.ScoreEn
 	// TODO check bytes write
 	_, err = ctx.jsonFile.Write(out)
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ctx *ScoreCtx) UpdateScore(reqCtx *commondata.ReqCtx, req *scorepb.ScoreEntry) (*empty.Empty, error) {
+	log.Printf("(UpdateScore) Received request for %v\n", req)
+
+	// Set
+	ctx.data[reqCtx.Username] = append(ctx.data[reqCtx.Username], req)
+
+	// Write
+	err := ctx.WriteScores()
+	if err != nil {
 		return nil, err
 	}
+
+	req.Username = &reqCtx.Username
+	ctx.globalHeap.Push(req)
 
 	return &emptypb.Empty{}, nil
 }
@@ -87,7 +125,19 @@ func (ctx *ScoreCtx) UpdateScore(reqCtx *commondata.ReqCtx, req *scorepb.ScoreEn
 func (ctx *ScoreCtx) GetScores(reqCtx *commondata.ReqCtx, _ *emptypb.Empty) (*scorepb.GetScoresResp, error) {
 	log.Printf("(GetScores) Received request for %s\n", reqCtx.Username)
 
+	i := 0
+	it := ctx.globalHeap.Iterator()
+	// I don't like the efficiency of this
+	globalEntries := make([]*scorepb.ScoreEntry, 0, 5)
+
+	// https://stackoverflow.com/questions/21950244/is-there-a-way-to-iterate-over-a-range-of-integers
+	for it.Next() && i < 5 {
+		globalEntries = append(globalEntries, it.Value().(*scorepb.ScoreEntry))
+
+	}
+
 	return &scorepb.GetScoresResp{
-		Entries: ctx.data[reqCtx.Username],
+		Entries:       ctx.data[reqCtx.Username],
+		GlobalEntries: globalEntries,
 	}, nil
 }
