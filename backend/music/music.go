@@ -82,10 +82,18 @@ func EstablishMusicWebTransport(ctx *commondata.ReqCtx, handle *commondata.WebTr
 // PlayMusic implements the PlayMusic RPC to play a sound effect
 func PlayMusic(ctx *commondata.ReqCtx, req *musicpb.PlayMusicReq) (*empty.Empty, error) {
 	// Log incoming request for debugging
-	log.Printf("Received PlayMusic request: game_id=%s, effect=%v", req.GameId, req.Effect)
 
 	MusicServerLock.Lock()
 	defer MusicServerLock.Unlock()
+
+	log.Printf("Received PlayMusic request: game_id=%s, effect=%v, MusicServer=%v", req.GameId, req.Effect, MusicServer.transportMap)
+
+	for k, _ := range MusicServer.transportMap {
+		log.Printf("game is %s want %s", k, ctx.GameId)
+		if k == ctx.GameId {
+			log.Printf("Matched game id")
+		}
+	}
 
 	gameTransport := MusicServer.transportMap[ctx.GameId]
 	if gameTransport == nil {

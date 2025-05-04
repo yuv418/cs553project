@@ -40,7 +40,7 @@ type AbstractionService struct {
 
 type AbstractionServer struct {
 	Microservice  bool
-	dispatchTable map[string]Action
+	dispatchTable map[string]*Action
 	serviceData   map[string]AbstractionService
 	CommonServer  *CommonServer
 }
@@ -48,7 +48,7 @@ type AbstractionServer struct {
 var AbsCtx = &AbstractionServer{
 	Microservice:  GetMicroserviceStatus(),
 	serviceData:   make(map[string]AbstractionService),
-	dispatchTable: make(map[string]Action),
+	dispatchTable: make(map[string]*Action),
 	CommonServer:  NewCommonServer(),
 }
 
@@ -75,8 +75,19 @@ func InsertServiceData(absCtx *AbstractionServer, key string, url string, prefix
 	return nil
 }
 
+func InsertDispatchTable(
+	absCtx *AbstractionServer,
+	svcName string,
+	verb string,
+) {
+	absCtx.dispatchTable[verb] = &Action{
+		verb:    verb,
+		svcName: svcName,
+	}
+}
+
 // TODO: set up web server as well.
-func InsertDispatchTable[ReqT any, RespT any](
+func InsertDispatchTableHandler[ReqT any, RespT any](
 	absCtx *AbstractionServer,
 	svcName string,
 	verb string,
@@ -84,12 +95,7 @@ func InsertDispatchTable[ReqT any, RespT any](
 	shouldVerifyJwt bool,
 ) error {
 	svcData := absCtx.serviceData[svcName]
-	absCtx.dispatchTable[verb] = Action{
-		verb:    verb,
-		svcName: svcName,
-		fn:      handlerFn,
-	}
-
+	absCtx.dispatchTable[verb].fn = handlerFn.(any)
 	// TODO dry
 	route := svcData.prefix + "/" + verb
 	log.Println("(CAL) Adding route ", route)

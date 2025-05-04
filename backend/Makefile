@@ -1,6 +1,8 @@
 monolith: auth.proto game_engine.proto world_gen.proto frame_gen.proto initiator.proto music.proto score.proto
 	go build -tags monolith -o ./out/monolith ./bins
 
+microservices: auth initiator worldgen engine music score
+
 initiator: initiator.proto
 	go build -tags initiator -o ./out/initiator ./bins
 

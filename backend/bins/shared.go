@@ -22,19 +22,39 @@ import (
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
-func SetupScoreTables(ctx *abstraction.AbstractionServer) {
+func SetupServiceData(ctx *abstraction.AbstractionServer) {
+	abstraction.InsertServiceData(abstraction.AbsCtx, "score", os.Getenv("SCORE_URL"), "/score.ScoreService")
+	abstraction.InsertServiceData(abstraction.AbsCtx, "auth", os.Getenv("AUTH_URL"), "/auth.AuthService")
+	abstraction.InsertServiceData(abstraction.AbsCtx, "initiator", os.Getenv("INITIATOR_URL"), "/initiator.InitiatorService")
+	abstraction.InsertServiceData(abstraction.AbsCtx, "music", os.Getenv("MUSIC_URL"), "/music.MusicService/PlayMusic")
+	abstraction.InsertServiceData(abstraction.AbsCtx, "worldGen", os.Getenv("WORLD_GEN_URL"), "/world_gen.WorldGenService")
+	abstraction.InsertServiceData(abstraction.AbsCtx, "gameEngine", os.Getenv("GAME_ENGINE_URL"), "/game_engine.GameEngineService")
+}
+
+func SetupDispatchTable(ctx *abstraction.AbstractionServer) {
+	abstraction.InsertDispatchTable(abstraction.AbsCtx, "auth", "Authenticate")
+	abstraction.InsertDispatchTable(abstraction.AbsCtx, "initiator", "StartGame")
+	abstraction.InsertDispatchTable(abstraction.AbsCtx, "gameEngine", "EngineStartGame")
+	abstraction.InsertDispatchTable(abstraction.AbsCtx, "initiator", "StartGame")
+	abstraction.InsertDispatchTable(abstraction.AbsCtx, "worldGen", "GenerateWorld")
+	abstraction.InsertDispatchTable(abstraction.AbsCtx, "gameEngine", "EngineStartGame")
+	abstraction.InsertDispatchTable(abstraction.AbsCtx, "music", "PlayMusic")
+	abstraction.InsertDispatchTable(abstraction.AbsCtx, "score", "UpdateScore")
+	abstraction.InsertDispatchTable(abstraction.AbsCtx, "score", "GetScores")
+}
+
+func SetupScoreHandler(ctx *abstraction.AbstractionServer) {
 	scoreCtx, err := score.LoadScoreCtx()
 	if err != nil {
 		log.Fatalf("Failed to load auth score context with %s\n", err)
 	}
 
-	abstraction.InsertServiceData(abstraction.AbsCtx, "score", os.Getenv("SCORE_URL"), "/score.ScoreService")
-	abstraction.InsertDispatchTable[scorepb.ScoreEntry, emptypb.Empty](abstraction.AbsCtx, "score", "UpdateScore", scoreCtx.UpdateScore, true)
-	abstraction.InsertDispatchTable[emptypb.Empty, scorepb.GetScoresResp](abstraction.AbsCtx, "score", "GetScores", scoreCtx.GetScores, true)
+	abstraction.InsertDispatchTableHandler[scorepb.ScoreEntry, emptypb.Empty](abstraction.AbsCtx, "score", "UpdateScore", scoreCtx.UpdateScore, true)
+	abstraction.InsertDispatchTableHandler[emptypb.Empty, scorepb.GetScoresResp](abstraction.AbsCtx, "score", "GetScores", scoreCtx.GetScores, true)
 
 }
 
-func SetupAuthTables(ctx *abstraction.AbstractionServer) {
+func SetupAuthHandler(ctx *abstraction.AbstractionServer) {
 	cfg, err := auth.LoadAuthConfig()
 	if err != nil {
 		log.Fatalf("Auth config load failed with %s\n", err)
@@ -46,34 +66,29 @@ func SetupAuthTables(ctx *abstraction.AbstractionServer) {
 		log.Fatalf("Failed to create auth server: %v", err)
 	}
 
-	abstraction.InsertServiceData(abstraction.AbsCtx, "auth", os.Getenv("AUTH_URL"), "/auth.AuthService")
-	abstraction.InsertDispatchTable[authpb.AuthRequest, authpb.AuthResponse](abstraction.AbsCtx, "auth", "Authenticate", authServer.Authenticate, false)
+	abstraction.InsertDispatchTableHandler[authpb.AuthRequest, authpb.AuthResponse](abstraction.AbsCtx, "auth", "Authenticate", authServer.Authenticate, false)
 
 }
 
-func SetupInitiatorTables(ctx *abstraction.AbstractionServer) {
-	abstraction.InsertServiceData(abstraction.AbsCtx, "initiator", os.Getenv("INITIATOR_URL"), "/initiator.InitiatorService")
-	abstraction.InsertDispatchTable[initiatorpb.StartGameReq, initiatorpb.StartGameResp](abstraction.AbsCtx, "initiator", "StartGame", initiator.StartGame, true)
+func SetupInitiatorHandler(ctx *abstraction.AbstractionServer) {
+	abstraction.InsertDispatchTableHandler[initiatorpb.StartGameReq, initiatorpb.StartGameResp](abstraction.AbsCtx, "initiator", "StartGame", initiator.StartGame, true)
 }
 
-func SetupWorldgenTables(ctx *abstraction.AbstractionServer) {
-	abstraction.InsertServiceData(abstraction.AbsCtx, "worldGen", os.Getenv("WORLD_GEN_URL"), "/world_gen.WorldGenService")
-	abstraction.InsertDispatchTable[worldgenpb.WorldGenReq, worldgenpb.WorldGenerated](abstraction.AbsCtx, "worldGen", "GenerateWorld", worldgen.GenerateWorld, false)
+func SetupWorldgenHandler(ctx *abstraction.AbstractionServer) {
+	abstraction.InsertDispatchTableHandler[worldgenpb.WorldGenReq, worldgenpb.WorldGenerated](abstraction.AbsCtx, "worldGen", "GenerateWorld", worldgen.GenerateWorld, false)
 }
 
-func SetupGameEngineTables(ctx *abstraction.AbstractionServer) {
-	abstraction.InsertServiceData(abstraction.AbsCtx, "gameEngine", os.Getenv("GAME_ENGINE_URL"), "/game_engine.GameEngineService")
+func SetupGameEngineHandler(ctx *abstraction.AbstractionServer) {
 
 	// Any internal microservice functions don't have to be validated.
-	abstraction.InsertDispatchTable[enginepb.GameEngineStartReq, emptypb.Empty](abstraction.AbsCtx, "gameEngine", "EngineStartGame", engine.StartGame, false)
+	abstraction.InsertDispatchTableHandler[enginepb.GameEngineStartReq, emptypb.Empty](abstraction.AbsCtx, "gameEngine", "EngineStartGame", engine.StartGame, false)
 	abstraction.AddWebTransportRoute[enginepb.GameEngineInputReq, *enginepb.GameEngineInputReq, emptypb.Empty, *emptypb.Empty](abstraction.AbsCtx.CommonServer, "/gameEngine/GameSession", engine.HandleInput, engine.EstablishGameWebTransport)
 }
 
-func SetupMusicTables(ctx *abstraction.AbstractionServer) {
-	abstraction.InsertServiceData(abstraction.AbsCtx, "music", os.Getenv("MUSIC_URL"), "/music.MusicService/PlayMusic")
+func SetupMusicHandler(ctx *abstraction.AbstractionServer) {
 
 	// Any internal microservice functions don't have to be validated.
-	abstraction.InsertDispatchTable[musicpb.PlayMusicReq, emptypb.Empty](abstraction.AbsCtx, "music", "PlayMusic", music.PlayMusic, false)
+	abstraction.InsertDispatchTableHandler[musicpb.PlayMusicReq, emptypb.Empty](abstraction.AbsCtx, "music", "PlayMusic", music.PlayMusic, false)
 	// Stub out the handler function because it'll never be used.
 	abstraction.AddWebTransportRoute[emptypb.Empty, *emptypb.Empty, emptypb.Empty, *emptypb.Empty](
 		abstraction.AbsCtx.CommonServer,
