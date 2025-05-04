@@ -37,9 +37,8 @@ export function showGameOverScreen(jwt: string) {
     // Get local score history and global score history
 
     scoreClient.getScores({}, { headers: {
-                "Authorization": `Bearer ${jwt}`
+        "Authorization": `Bearer ${jwt}`
     }}).then((resp) => {
-        console.log(resp)
         const gameOverScreen = document.getElementById('game-over');
         if (gameOverScreen instanceof HTMLElement) {
             gameOverScreen.style.display = 'block';
@@ -47,6 +46,62 @@ export function showGameOverScreen(jwt: string) {
             if (scoreElement) {
                 scoreElement.textContent = score.toString();
             }
+
+            const bestScoreElement = document.getElementById("best-score");
+            if (bestScoreElement) {
+                bestScoreElement.textContent = resp.entries.sort((a, b) => b.score - a.score)[0].score.toString()
+            }
+
+            // Populate leaderboard
+            const leaderboardElement = document.getElementById("global-leaderboard")
+            if (leaderboardElement) {
+                leaderboardElement.replaceChildren()
+
+                let el = document.createElement("p")
+                el.textContent = "Leaderboard"
+                leaderboardElement.appendChild(el)
+
+                for (var ent of resp.globalEntries) {
+                    let el = document.createElement("p")
+                    el.textContent = `${ent.username} ${ent.score}`
+
+                    leaderboardElement.appendChild(el)
+                }
+            }
+
+            const pastScoresElement = document.getElementById("past-scores")
+            if (pastScoresElement) {
+                pastScoresElement.replaceChildren()
+
+                let el = document.createElement("p")
+                el.textContent = "Score History"
+                pastScoresElement.appendChild(el)
+
+                for (var ent of resp.entries) {
+                    let el = document.createElement("p")
+                    el.textContent = `${ent.username} ${ent.score}`
+
+                    pastScoresElement.appendChild(el)
+                }
+            }
+
+            const toggleBtn = document.getElementById("toggle-stats-button")
+            toggleBtn?.addEventListener("click", (_: MouseEvent) => {
+                if (toggleBtn.textContent === "View Score History") {
+                    console.log("Here")
+                    toggleBtn.textContent = "View Leaderboard"
+                    if (leaderboardElement && pastScoresElement) {
+                        leaderboardElement.style.display = "none"
+                        pastScoresElement.style.display = "inline-block"
+                    }
+                } else {
+                    toggleBtn.textContent = "View Score History"
+                    if (leaderboardElement && pastScoresElement) {
+                        leaderboardElement.style.display = "inline-block"
+                        pastScoresElement.style.display = "none"
+                    }
+                }
+            })
 
             const restartButton = document.getElementById('restart-button');
             if (restartButton instanceof HTMLButtonElement) {
