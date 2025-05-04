@@ -17,8 +17,10 @@ import (
 	framegenpb "github.com/yuv418/cs553project/backend/protos/frame_gen"
 	enginepb "github.com/yuv418/cs553project/backend/protos/game_engine"
 	musicpb "github.com/yuv418/cs553project/backend/protos/music"
+	scorepb "github.com/yuv418/cs553project/backend/protos/score"
 	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -201,7 +203,6 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, handle *commondata.WebTra
 									GameId: gameId,
 									Effect: musicpb.SoundEffect_SCORE_INCREASED,
 								})
-
 							})()
 						}
 					} else {
@@ -215,6 +216,7 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, handle *commondata.WebTra
 					frameUpdate.PipeGaps[i] = statePtr.world.PipeSpecs[closestPipe].GapHeight
 					frameUpdate.PipeStarts[i] = statePtr.world.PipeSpecs[closestPipe].GapStart
 
+					// Bounding box intersection check (supposedly)
 					if ((birdX > frameUpdate.PipePositions[i] &&
 						birdX < frameUpdate.PipePositions[i]+pipeWidth) ||
 						(birdX+statePtr.birdWidth > frameUpdate.PipePositions[i] &&
@@ -244,6 +246,13 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, handle *commondata.WebTra
 							// This will quit
 							quit <- struct{}{}
 						})()
+
+						// TODO: Make this sync or async
+						common.Dispatch[scorepb.ScoreEntry, emptypb.Empty](ctx, "UpdateScore", &scorepb.ScoreEntry{
+							Score:      statePtr.score,
+							GameId:     gameId,
+							FinishTime: timestamppb.New(time.Now()),
+						})
 
 					}
 

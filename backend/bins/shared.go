@@ -29,8 +29,8 @@ func SetupScoreTables(ctx *abstraction.AbstractionServer) {
 	}
 
 	abstraction.InsertServiceData(abstraction.AbsCtx, "score", os.Getenv("SCORE_URL"), "/score.ScoreService")
-	abstraction.InsertDispatchTable[scorepb.UpdateScoreReq, emptypb.Empty](abstraction.AbsCtx, "score", "UpdateScore", scoreCtx.UpdateScore, true)
-	abstraction.InsertDispatchTable[scorepb.GetScoresReq, scorepb.GetScoresResp](abstraction.AbsCtx, "score", "GetScores", scoreCtx.GetScores, true)
+	abstraction.InsertDispatchTable[scorepb.ScoreEntry, emptypb.Empty](abstraction.AbsCtx, "score", "UpdateScore", scoreCtx.UpdateScore, true)
+	abstraction.InsertDispatchTable[emptypb.Empty, scorepb.GetScoresResp](abstraction.AbsCtx, "score", "GetScores", scoreCtx.GetScores, true)
 
 }
 

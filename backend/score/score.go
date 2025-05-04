@@ -60,11 +60,11 @@ func LoadScoreCtx() (*ScoreCtx, error) {
 
 }
 
-func (ctx *ScoreCtx) UpdateScore(reqCtx *commondata.ReqCtx, req *scorepb.UpdateScoreReq) (*empty.Empty, error) {
+func (ctx *ScoreCtx) UpdateScore(reqCtx *commondata.ReqCtx, req *scorepb.ScoreEntry) (*empty.Empty, error) {
 	log.Printf("(UpdateScore) Received request for %v\n", req)
 
 	// Set
-	ctx.data[req.GameId] = append(ctx.data[req.GameId], req.Entry)
+	ctx.data[reqCtx.Username] = append(ctx.data[reqCtx.Username], req)
 
 	// Write to file
 	out, err := json.Marshal(ctx.data)
@@ -84,11 +84,10 @@ func (ctx *ScoreCtx) UpdateScore(reqCtx *commondata.ReqCtx, req *scorepb.UpdateS
 	return &emptypb.Empty{}, nil
 }
 
-func (ctx *ScoreCtx) GetScores(reqCtx *commondata.ReqCtx, req *scorepb.GetScoresReq) (*scorepb.GetScoresResp, error) {
-	log.Printf("(GetScores) Received request for %v\n", req)
+func (ctx *ScoreCtx) GetScores(reqCtx *commondata.ReqCtx, _ *emptypb.Empty) (*scorepb.GetScoresResp, error) {
+	log.Printf("(GetScores) Received request for %s\n", reqCtx.Username)
 
-	// Set
 	return &scorepb.GetScoresResp{
-		Entries: ctx.data[req.GameId],
+		Entries: ctx.data[reqCtx.Username],
 	}, nil
 }
