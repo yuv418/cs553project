@@ -17,6 +17,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
 
+	common "github.com/yuv418/cs553project/backend/common"
 	"github.com/yuv418/cs553project/backend/commondata"
 	authpb "github.com/yuv418/cs553project/backend/protos/auth"
 )
@@ -31,13 +32,6 @@ type UserCredentials struct {
 type AuthConfig struct {
 	TokenExpiry time.Duration
 	UserFile    string // Path to the static user file
-}
-
-func getEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
 }
 
 // Derive a 32-byte key for AES-256 from the JWT secret using SHA-256.
@@ -235,8 +229,8 @@ func (s *AuthServer) saveUsers() error {
 func LoadAuthConfig() (*AuthConfig, error) {
 	cfg := &AuthConfig{}
 
-	cfg.UserFile = getEnv("AUTH_USER_FILE", "users.json")
-	tokenExpiryStr := getEnv("AUTH_TOKEN_EXPIRY", "6360h")
+	cfg.UserFile = common.GetEnv("AUTH_USER_FILE", "users.json")
+	tokenExpiryStr := common.GetEnv("AUTH_TOKEN_EXPIRY", "6360h")
 
 	expiry, err := time.ParseDuration(tokenExpiryStr)
 	if err != nil {
@@ -245,7 +239,4 @@ func LoadAuthConfig() (*AuthConfig, error) {
 	cfg.TokenExpiry = expiry
 
 	return cfg, nil
-}
-
-func main() {
 }

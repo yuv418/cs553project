@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package score;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "./;scorepb";
+
+message ScoreEntry {
+    int32 score = 1;
+    google.protobuf.Timestamp finish_time = 2;
+}
+
+// https://stackoverflow.com/questions/3574716/date-and-time-type-for-use-with-protobuf
+message UpdateScoreReq {
+    string game_id = 1;
+    ScoreEntry entry = 2;
+}
+
+message GetScoresReq { string game_id = 1; }
+
+message GetScoresResp { repeated ScoreEntry entries = 2; }
+
+service ScoreService {
+    rpc UpdateScore(UpdateScoreReq) returns (google.protobuf.Empty) {}
+    rpc GetScores(GetScoresReq) returns (GetScoresResp) {}
+}

@@ -9,6 +9,7 @@ import (
 	engine "github.com/yuv418/cs553project/backend/game_engine"
 	"github.com/yuv418/cs553project/backend/initiator"
 	music "github.com/yuv418/cs553project/backend/music"
+	"github.com/yuv418/cs553project/backend/score"
 	worldgen "github.com/yuv418/cs553project/backend/world_gen"
 
 	abstraction "github.com/yuv418/cs553project/backend/common"
@@ -16,14 +17,27 @@ import (
 	enginepb "github.com/yuv418/cs553project/backend/protos/game_engine"
 	initiatorpb "github.com/yuv418/cs553project/backend/protos/initiator"
 	musicpb "github.com/yuv418/cs553project/backend/protos/music"
+	scorepb "github.com/yuv418/cs553project/backend/protos/score"
 	worldgenpb "github.com/yuv418/cs553project/backend/protos/world_gen"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
+func SetupScoreTables(ctx *abstraction.AbstractionServer) {
+	scoreCtx, err := score.LoadScoreCtx()
+	if err != nil {
+		log.Fatalf("Failed to load auth score context with %s\n", err)
+	}
+
+	abstraction.InsertServiceData(abstraction.AbsCtx, "score", os.Getenv("SCORE_URL"), "/score.ScoreService")
+	abstraction.InsertDispatchTable[scorepb.UpdateScoreReq, emptypb.Empty](abstraction.AbsCtx, "score", "UpdateScore", scoreCtx.UpdateScore, true)
+	abstraction.InsertDispatchTable[scorepb.GetScoresReq, scorepb.GetScoresResp](abstraction.AbsCtx, "score", "GetScores", scoreCtx.GetScores, true)
+
+}
+
 func SetupAuthTables(ctx *abstraction.AbstractionServer) {
 	cfg, err := auth.LoadAuthConfig()
 	if err != nil {
-		log.Fatalf("Auth failed with %s\n", err)
+		log.Fatalf("Auth config load failed with %s\n", err)
 	}
 
 	authServer, err := auth.NewAuthServer(ctx.CommonServer.Cfg.JWTSecret, cfg.TokenExpiry, cfg.UserFile)
