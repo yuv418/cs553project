@@ -74,6 +74,8 @@ services:
     environment:
       - MICROSERVICE=1
       - WORLD_GEN_URL=worldgen:50052
+      - SCORE_URL=score:50056
+      - MUSIC_URL=music:50055
       - AUTH_LISTEN_ADDR=:50053
       - AUTH_CERT_FILE=/app/cert.pem
       - AUTH_KEY_FILE=/app/key.pem

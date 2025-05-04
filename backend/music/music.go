@@ -86,16 +86,9 @@ func PlayMusic(ctx *commondata.ReqCtx, req *musicpb.PlayMusicReq) (*empty.Empty,
 	MusicServerLock.Lock()
 	defer MusicServerLock.Unlock()
 
-	log.Printf("Received PlayMusic request: game_id=%s, effect=%v, MusicServer=%v", req.GameId, req.Effect, MusicServer.transportMap)
+	log.Printf("Received PlayMusic request: game_id=%s, effect=%v", req.GameId, req.Effect)
 
-	for k, _ := range MusicServer.transportMap {
-		log.Printf("game is %s want %s", k, ctx.GameId)
-		if k == ctx.GameId {
-			log.Printf("Matched game id")
-		}
-	}
-
-	gameTransport := MusicServer.transportMap[ctx.GameId]
+	gameTransport := MusicServer.transportMap[req.GameId]
 	if gameTransport == nil {
 		return nil, fmt.Errorf("unknown game ID: %v", ctx.GameId)
 	}
