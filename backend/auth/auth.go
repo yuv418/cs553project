@@ -17,7 +17,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
 
-	common "github.com/yuv418/cs553project/backend/common"
 	"github.com/yuv418/cs553project/backend/commondata"
 	authpb "github.com/yuv418/cs553project/backend/protos/auth"
 )
@@ -229,8 +228,8 @@ func (s *AuthServer) saveUsers() error {
 func LoadAuthConfig() (*AuthConfig, error) {
 	cfg := &AuthConfig{}
 
-	cfg.UserFile = common.GetEnv("AUTH_USER_FILE", "users.json")
-	tokenExpiryStr := common.GetEnv("AUTH_TOKEN_EXPIRY", "6360h")
+	cfg.UserFile = commondata.GetEnv("AUTH_USER_FILE", "users.json")
+	tokenExpiryStr := commondata.GetEnv("AUTH_TOKEN_EXPIRY", "6360h")
 
 	expiry, err := time.ParseDuration(tokenExpiryStr)
 	if err != nil {

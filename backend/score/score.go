@@ -12,7 +12,6 @@ import (
 
 	"github.com/emirpasic/gods/trees/binaryheap"
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/yuv418/cs553project/backend/common"
 	"github.com/yuv418/cs553project/backend/commondata"
 	scorepb "github.com/yuv418/cs553project/backend/protos/score"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -26,7 +25,7 @@ type ScoreCtx struct {
 }
 
 func LoadScoreCtx() (*ScoreCtx, error) {
-	scoreFileName := common.GetEnv("SCORE_FILE", "score.json")
+	scoreFileName := commondata.GetEnv("SCORE_FILE", "score.json")
 	scoreFile, err := os.OpenFile(scoreFileName, os.O_RDWR, 0)
 
 	ctx := &ScoreCtx{}

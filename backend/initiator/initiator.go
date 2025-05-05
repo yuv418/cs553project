@@ -20,7 +20,7 @@ func StartGame(ctx *commondata.ReqCtx, req *initiatorpb.StartGameReq) (*initiato
 	gameIdUUID := uuid.New()
 	gameId := gameIdUUID.String()
 
-	generatedWorld, err := common.Dispatch[worldgenpb.WorldGenReq, worldgenpb.WorldGenerated](ctx, "GenerateWorld", &worldgenpb.WorldGenReq{
+	generatedWorld, err := common.Dispatch[worldgenpb.WorldGenReq, worldgenpb.WorldGenerated](ctx, "Initiator", "GenerateWorld", &worldgenpb.WorldGenReq{
 		GameId:         gameId,
 		ViewportWidth:  req.ViewportWidth,
 		ViewportHeight: req.ViewportHeight,
@@ -31,7 +31,7 @@ func StartGame(ctx *commondata.ReqCtx, req *initiatorpb.StartGameReq) (*initiato
 		return nil, err
 	}
 
-	_, err = common.Dispatch[enginepb.GameEngineStartReq, emptypb.Empty](ctx, "EngineStartGame", &enginepb.GameEngineStartReq{
+	_, err = common.Dispatch[enginepb.GameEngineStartReq, emptypb.Empty](ctx, "Initiator", "EngineStartGame", &enginepb.GameEngineStartReq{
 		GameId:         gameId,
 		ViewportWidth:  req.ViewportWidth,
 		ViewportHeight: req.ViewportHeight,

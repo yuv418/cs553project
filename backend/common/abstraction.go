@@ -7,11 +7,13 @@ import (
 	"crypto/tls"
 	"log"
 	"os"
+	"time"
 
 	"connectrpc.com/connect"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/yuv418/cs553project/backend/commondata"
+	"github.com/yuv418/cs553project/backend/stats"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -43,6 +45,7 @@ type AbstractionServer struct {
 	dispatchTable map[string]*Action
 	serviceData   map[string]AbstractionService
 	CommonServer  *CommonServer
+	statChannel   chan *stats.Stat
 }
 
 var AbsCtx = &AbstractionServer{
@@ -50,6 +53,7 @@ var AbsCtx = &AbstractionServer{
 	serviceData:   make(map[string]AbstractionService),
 	dispatchTable: make(map[string]*Action),
 	CommonServer:  NewCommonServer(),
+	statChannel:   stats.StartStatThread(),
 }
 
 func InsertServiceData(absCtx *AbstractionServer, key string, url string, prefix string) error {
@@ -131,7 +135,9 @@ func InsertDispatchTableHandler[ReqT any, RespT any](
 	return nil
 }
 
-func Dispatch[Req any, Resp any](ctx *commondata.ReqCtx, verb string, req *Req) (*Resp, error) {
+// TODO lock
+// src is for logging
+func Dispatch[Req any, Resp any](ctx *commondata.ReqCtx, src string, verb string, req *Req) (*Resp, error) {
 	// https://sahansera.dev/building-grpc-client-go/
 	if AbsCtx.Microservice {
 		// https://pkg.go.dev/google.golang.org/grpc#ClientConn.Invoke
@@ -152,7 +158,16 @@ func Dispatch[Req any, Resp any](ctx *commondata.ReqCtx, verb string, req *Req) 
 		}
 		callCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(md))
 
+		start := time.Now()
 		err := client.Invoke(callCtx, loc, req, resp)
+		end := time.Since(start)
+		// TODO inefficient
+		AbsCtx.statChannel <- &stats.Stat{
+			SrcSvc:  src,
+			DestSvc: verb,
+			ReqTime: end,
+		}
+
 		if err != nil {
 			log.Printf("Request failed with %s\n", err)
 			return nil, err
@@ -162,7 +177,16 @@ func Dispatch[Req any, Resp any](ctx *commondata.ReqCtx, verb string, req *Req) 
 
 	} else {
 		// Dispatch some stuff
+		start := time.Now()
 		returnedResp, err := (AbsCtx.dispatchTable[verb].fn.(func(*commondata.ReqCtx, *Req) (*Resp, error))(ctx, req))
+		end := time.Since(start)
+		// TODO inefficient
+		AbsCtx.statChannel <- &stats.Stat{
+			SrcSvc:  src,
+			DestSvc: verb,
+			ReqTime: end,
+		}
+
 		if err != nil {
 			return nil, err
 		} else {
