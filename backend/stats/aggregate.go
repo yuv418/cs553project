@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/yuv418/cs553project/backend/commondata"
@@ -48,7 +49,7 @@ func StartStatThread() chan *Stat {
 			dataArray[2] = statEnt.DestSvcName
 			dataArray[3] = statEnt.DestSvcVerb
 			dataArray[4] = statEnt.GameId
-			dataArray[5] = statEnt.ReqTime.String()
+			dataArray[5] = strconv.FormatInt(statEnt.ReqTime.Nanoseconds(), 10)
 
 			writer.Write(dataArray)
 			writer.Flush()
