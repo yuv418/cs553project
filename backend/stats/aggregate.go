@@ -11,8 +11,11 @@ import (
 )
 
 type Stat struct {
-	SrcSvc  string
-	DestSvc string
+	SrcSvcName  string
+	SrcSvcVerb  string
+	DestSvcName string
+	DestSvcVerb string
+	GameId      string
 	// This could be latency,
 	// or something else, who knows
 	ReqTime time.Duration
@@ -31,7 +34,7 @@ func StartStatThread() chan *Stat {
 		log.Fatalf("Failed at creating %s\n", statFile)
 	}
 	writer := csv.NewWriter(file)
-	dataArray := []string{"SrcSvc", "DestSvc", "ReqTime"}
+	dataArray := []string{"SrcSvcName", "SrcSvcVerb", "DestSvcName", "DestSvcVerb", "GameId", "ReqTime"}
 
 	writer.Write(dataArray)
 	writer.Flush()
@@ -40,9 +43,13 @@ func StartStatThread() chan *Stat {
 		defer file.Close()
 
 		for statEnt := range messageChan {
-			dataArray[0] = statEnt.SrcSvc
-			dataArray[1] = statEnt.DestSvc
-			dataArray[2] = statEnt.ReqTime.String()
+			dataArray[0] = statEnt.SrcSvcName
+			dataArray[1] = statEnt.SrcSvcVerb
+			dataArray[2] = statEnt.DestSvcName
+			dataArray[3] = statEnt.DestSvcVerb
+			dataArray[4] = statEnt.GameId
+			dataArray[5] = statEnt.ReqTime.String()
+
 			writer.Write(dataArray)
 			writer.Flush()
 		}

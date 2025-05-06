@@ -82,7 +82,13 @@ func SetupGameEngineHandler(ctx *abstraction.AbstractionServer) {
 
 	// Any internal microservice functions don't have to be validated.
 	abstraction.InsertDispatchTableHandler[enginepb.GameEngineStartReq, emptypb.Empty](abstraction.AbsCtx, "gameEngine", "EngineStartGame", engine.StartGame, false)
-	abstraction.AddWebTransportRoute[enginepb.GameEngineInputReq, *enginepb.GameEngineInputReq, emptypb.Empty, *emptypb.Empty](abstraction.AbsCtx.CommonServer, "/gameEngine/GameSession", engine.HandleInput, engine.EstablishGameWebTransport)
+	abstraction.AddWebTransportRoute[enginepb.GameEngineInputReq, *enginepb.GameEngineInputReq, emptypb.Empty, *emptypb.Empty](
+		abstraction.AbsCtx.CommonServer,
+		"GameEngine",
+		"/gameEngine/GameSession",
+		engine.HandleInput,
+		engine.EstablishGameWebTransport,
+	)
 }
 
 func SetupMusicHandler(ctx *abstraction.AbstractionServer) {
@@ -92,6 +98,7 @@ func SetupMusicHandler(ctx *abstraction.AbstractionServer) {
 	// Stub out the handler function because it'll never be used.
 	abstraction.AddWebTransportRoute[emptypb.Empty, *emptypb.Empty, emptypb.Empty, *emptypb.Empty](
 		abstraction.AbsCtx.CommonServer,
+		"Music",
 		"/music/MusicSession",
 		func(ctx *commondata.ReqCtx, inp *emptypb.Empty) (*emptypb.Empty, error) {
 			return &emptypb.Empty{}, nil

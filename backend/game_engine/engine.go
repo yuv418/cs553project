@@ -199,7 +199,7 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, handle *commondata.WebTra
 							statePtr.prevClosestPipe = closestPipe
 
 							go (func() {
-								common.Dispatch[musicpb.PlayMusicReq, emptypb.Empty](ctx, "GameEngine", "PlayMusic", &musicpb.PlayMusicReq{
+								common.Dispatch[musicpb.PlayMusicReq, emptypb.Empty](ctx, "PlayMusic", &musicpb.PlayMusicReq{
 									GameId: gameId,
 									Effect: musicpb.SoundEffect_SCORE_INCREASED,
 								})
@@ -239,7 +239,7 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, handle *commondata.WebTra
 						// This should be an asynchronous call to avoid blocking the
 						// game engine
 						go (func() {
-							common.Dispatch[musicpb.PlayMusicReq, emptypb.Empty](ctx, "GameEngine", "PlayMusic", &musicpb.PlayMusicReq{
+							common.Dispatch[musicpb.PlayMusicReq, emptypb.Empty](ctx, "PlayMusic", &musicpb.PlayMusicReq{
 								GameId: gameId,
 								Effect: musicpb.SoundEffect_DIE,
 							})
@@ -248,7 +248,7 @@ func EstablishGameWebTransport(ctx *commondata.ReqCtx, handle *commondata.WebTra
 						})()
 
 						// TODO: Make this sync or async
-						common.Dispatch[scorepb.ScoreEntry, emptypb.Empty](ctx, "GameEngine", "UpdateScore", &scorepb.ScoreEntry{
+						common.Dispatch[scorepb.ScoreEntry, emptypb.Empty](ctx, "UpdateScore", &scorepb.ScoreEntry{
 							Score:      statePtr.score,
 							GameId:     gameId,
 							FinishTime: timestamppb.New(time.Now()),
@@ -301,7 +301,7 @@ func HandleInput(ctx *commondata.ReqCtx, inp *enginepb.GameEngineInputReq) (*emp
 		GlobalStateLock.Unlock()
 
 		go (func() {
-			common.Dispatch[musicpb.PlayMusicReq, emptypb.Empty](ctx, "GameEngine", "PlayMusic", &musicpb.PlayMusicReq{
+			common.Dispatch[musicpb.PlayMusicReq, emptypb.Empty](ctx, "PlayMusic", &musicpb.PlayMusicReq{
 				GameId: ctx.GameId,
 				Effect: musicpb.SoundEffect_JUMP,
 			})

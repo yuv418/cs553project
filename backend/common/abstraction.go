@@ -119,9 +119,11 @@ func InsertDispatchTableHandler[ReqT any, RespT any](
 				jwtString = jwt.(string)
 			}
 			resp, err := (handlerFn.(func(*commondata.ReqCtx, *ReqT) (*RespT, error)))(&commondata.ReqCtx{
-				HttpCtx:  &ctx,
-				Username: username,
-				Jwt:      jwtString,
+				HttpCtx:       &ctx,
+				Username:      username,
+				Jwt:           jwtString,
+				TargetSvcName: svcName,
+				TargetSvcVerb: verb,
 			}, req.Msg)
 
 			if err != nil {
@@ -137,12 +139,14 @@ func InsertDispatchTableHandler[ReqT any, RespT any](
 
 // TODO lock
 // src is for logging
-func Dispatch[Req any, Resp any](ctx *commondata.ReqCtx, src string, verb string, req *Req) (*Resp, error) {
+func Dispatch[Req any, Resp any](ctx *commondata.ReqCtx, verb string, req *Req) (*Resp, error) {
+
+	dispatchTableData := AbsCtx.dispatchTable[verb]
+
 	// https://sahansera.dev/building-grpc-client-go/
 	if AbsCtx.Microservice {
 		// https://pkg.go.dev/google.golang.org/grpc#ClientConn.Invoke
 		// Adapted from protobuf generated svcs
-		dispatchTableData := AbsCtx.dispatchTable[verb]
 		svcData := AbsCtx.serviceData[dispatchTableData.svcName]
 		client := svcData.client
 
@@ -163,9 +167,12 @@ func Dispatch[Req any, Resp any](ctx *commondata.ReqCtx, src string, verb string
 		end := time.Since(start)
 		// TODO inefficient
 		AbsCtx.statChannel <- &stats.Stat{
-			SrcSvc:  src,
-			DestSvc: verb,
-			ReqTime: end,
+			SrcSvcName:  ctx.TargetSvcName,
+			SrcSvcVerb:  ctx.TargetSvcVerb,
+			DestSvcName: dispatchTableData.svcName,
+			DestSvcVerb: verb,
+			GameId:      ctx.GameId,
+			ReqTime:     end,
 		}
 
 		if err != nil {
@@ -176,15 +183,19 @@ func Dispatch[Req any, Resp any](ctx *commondata.ReqCtx, src string, verb string
 		}
 
 	} else {
+
 		// Dispatch some stuff
 		start := time.Now()
 		returnedResp, err := (AbsCtx.dispatchTable[verb].fn.(func(*commondata.ReqCtx, *Req) (*Resp, error))(ctx, req))
 		end := time.Since(start)
 		// TODO inefficient
 		AbsCtx.statChannel <- &stats.Stat{
-			SrcSvc:  src,
-			DestSvc: verb,
-			ReqTime: end,
+			SrcSvcName:  ctx.TargetSvcName,
+			SrcSvcVerb:  ctx.TargetSvcVerb,
+			GameId:      ctx.GameId,
+			DestSvcName: dispatchTableData.svcName,
+			DestSvcVerb: verb,
+			ReqTime:     end,
 		}
 
 		if err != nil {

@@ -10,6 +10,9 @@ type ReqCtx struct {
 	Username string
 	Jwt      string
 	GameId   string
+
+	TargetSvcName string
+	TargetSvcVerb string
 }
 
 type WebTransportHandle struct {

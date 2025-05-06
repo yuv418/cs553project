@@ -177,6 +177,7 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 	*Res
 }](
 	commonSrv *CommonServer,
+	svcName string,
 	route string,
 	handlerFn func(*commondata.ReqCtx, *Req) (*Res, error),
 	insertWebTransport func(*commondata.ReqCtx, *commondata.WebTransportHandle) error,
@@ -221,6 +222,9 @@ func AddWebTransportRoute[Req any, PtrReq interface {
 						Username: claims["username"].(string),
 						Jwt:      r.URL.Query().Get("token"),
 						GameId:   r.URL.Query().Get("gameId"),
+						// This won't really be used here, I think.
+						TargetSvcVerb: route,
+						TargetSvcName: svcName,
 					}
 
 					// https://pkg.go.dev/io#ByteScanner
