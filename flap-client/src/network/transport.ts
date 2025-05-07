@@ -7,6 +7,8 @@ import { updateGameState } from '../game/state';
 import { resetBird } from '../game/bird';
 import { hideJumpInstruction } from '../game/ui';
 import { playSound } from "../game/music";
+import { logSendTime } from './latencyLogger';
+
 
 let gameWriter: WritableStreamDefaultWriter<any> | null = null;
 
@@ -47,12 +49,12 @@ export async function startTransport(jwt: string, gameId: string, baseUrl: strin
 
 export async function startMusicTransport(jwt: string, gameId: string) {
     await startTransport(jwt,
-                         gameId,
-                         import.meta.env.VITE_WEBTRANSPORT_MUSIC_URL,
-                         (_: string) => {},
-                         () => {},
-                         musicPb.PlayMusicRespSchema,
-                         playSound)
+        gameId,
+        import.meta.env.VITE_WEBTRANSPORT_MUSIC_URL,
+        (_: string) => {},
+        () => {},
+        musicPb.PlayMusicRespSchema,
+        playSound)
 }
 
 export async function startGameTransport(jwt: string, gameId: string) {
@@ -75,16 +77,18 @@ export async function startGameTransport(jwt: string, gameId: string) {
     }
 
     await startTransport(jwt,
-                         gameId,
-                         import.meta.env.VITE_WEBTRANSPORT_GAME_URL,
-                         setupInputHandling,
-                         cleanup,
-                         frameGen.GenerateFrameReqSchema,
-                         updateGameState)
+        gameId,
+        import.meta.env.VITE_WEBTRANSPORT_GAME_URL,
+        setupInputHandling,
+        cleanup,
+        frameGen.GenerateFrameReqSchema,
+        updateGameState)
 }
 
 async function sendGameInput(gameId: string) {
     if (!gameWriter) return;
+
+    logSendTime('input');
 
     const inputReq = create(engine.GameEngineInputReqSchema, {
         gameId: gameId,
@@ -110,7 +114,7 @@ function cleanup(transport: WebTransport, cleanupFn: any) {
         gameWriter.close();
         gameWriter = null;
     }
-    
+
     resetBird();
 
     if (import.meta.env.VITE_DEBUG) {

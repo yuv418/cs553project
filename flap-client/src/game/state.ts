@@ -2,9 +2,10 @@ import type { GenerateFrameReq } from '../protos/frame_gen/frame_gen_pb';
 import { updateBirdPosition } from './bird';
 import { updatePipes } from './pipes';
 import { showGameOverScreen, updateScore } from './ui';
+import { logReceiveTime } from './latencyLogger';
 
 export function updateGameState(jwt: string, frame: GenerateFrameReq) {
-
+    logReceiveTime('frame');
     // Update game state
     if (frame.gameOver) {
         showGameOverScreen(jwt);
