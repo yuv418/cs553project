@@ -31,6 +31,10 @@ export function downloadLatencyCSV() {
       const recv = log.receiveTimestamps[i];
       csv += `${type},recv,${recv.toFixed(3)}\n`;
     }
+
+    // Clear it out
+    latencyLogs[type].sendTimestamps = []
+    latencyLogs[type].receiveTimestamps = []
   }
 
   const blob = new Blob([csv], { type: 'text/csv' });
@@ -38,5 +42,7 @@ export function downloadLatencyCSV() {
   a.href = URL.createObjectURL(blob);
   a.download = 'latency_data.csv';
   a.click();
+
+
 // 
 }
