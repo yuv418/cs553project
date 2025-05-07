@@ -4,7 +4,7 @@ import { startGameTransport, startMusicTransport } from '../network/transport';
 import { setupLoginForm } from '../auth/form';
 import { birdSprites, getBirdSize } from './bird';
 import { scoreClient } from './score';
-import { downloadLatencyCSV } from './latencyLogger';
+import { downloadLatencyCSV } from '../latencyLogger';
 
 let gameContainer: HTMLElement | null = null;
 let score = 0;
@@ -37,9 +37,11 @@ export function showJumpInstruction() {
 export function showGameOverScreen(jwt: string) {
     // Get local score history and global score history
     downloadLatencyCSV();
-    scoreClient.getScores({}, { headers: {
-        "Authorization": `Bearer ${jwt}`
-    }}).then((resp) => {
+    scoreClient.getScores({}, {
+        headers: {
+            "Authorization": `Bearer ${jwt}`
+        }
+    }).then((resp) => {
         const gameOverScreen = document.getElementById('game-over');
         if (gameOverScreen instanceof HTMLElement) {
             gameOverScreen.style.display = 'block';

@@ -1,4 +1,4 @@
-type LatencyType = 'frame' | 'audio';
+type LatencyType = 'input' | 'audio' | 'frame';
 
 interface LatencyLog {
   sendTimestamps: number[];
@@ -6,8 +6,9 @@ interface LatencyLog {
 }
 
 const latencyLogs: Record<LatencyType, LatencyLog> = {
-  frame: { sendTimestamps: [], receiveTimestamps: [] },
+  input: { sendTimestamps: [], receiveTimestamps: [] },
   audio: { sendTimestamps: [], receiveTimestamps: [] },
+  frame: { sendTimestamps: [], receiveTimestamps: [] },
 };
 
 export function logSendTime(type: LatencyType) {
@@ -19,15 +20,16 @@ export function logReceiveTime(type: LatencyType) {
 }
 
 export function downloadLatencyCSV() {
-  let csv = "type,send_ms,receive_ms,diff_ms\n";
+  let csv = "type,direction,time\n";
   for (const type of Object.keys(latencyLogs) as LatencyType[]) {
     const log = latencyLogs[type];
-    const len = Math.min(log.sendTimestamps.length, log.receiveTimestamps.length);
-    for (let i = 0; i < len; i++) {
+    for (let i = 0; i < log.sendTimestamps.length; i++) {
       const send = log.sendTimestamps[i];
-      const receive = log.receiveTimestamps[i];
-      const diff = receive - send;
-      csv += `${type},${send.toFixed(3)},${receive.toFixed(3)},${diff.toFixed(3)}\n`;
+      csv += `${type},send,${send.toFixed(3)}\n`;
+    }
+    for (let i = 0; i < log.receiveTimestamps.length; i++) {
+      const recv = log.receiveTimestamps[i];
+      csv += `${type},recv,${recv.toFixed(3)}\n`;
     }
   }
 
@@ -36,4 +38,5 @@ export function downloadLatencyCSV() {
   a.href = URL.createObjectURL(blob);
   a.download = 'latency_data.csv';
   a.click();
+// 
 }

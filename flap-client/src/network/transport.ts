@@ -7,7 +7,7 @@ import { updateGameState } from '../game/state';
 import { resetBird } from '../game/bird';
 import { hideJumpInstruction } from '../game/ui';
 import { playSound } from "../game/music";
-import { logSendTime } from './latencyLogger';
+import { logSendTime } from '../latencyLogger';
 
 
 let gameWriter: WritableStreamDefaultWriter<any> | null = null;
@@ -51,8 +51,8 @@ export async function startMusicTransport(jwt: string, gameId: string) {
     await startTransport(jwt,
         gameId,
         import.meta.env.VITE_WEBTRANSPORT_MUSIC_URL,
-        (_: string) => {},
-        () => {},
+        (_: string) => { },
+        () => { },
         musicPb.PlayMusicRespSchema,
         playSound)
 }
