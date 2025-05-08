@@ -27,6 +27,8 @@ import time
 import json
 import shutil
 
+
+
 # https://stackoverflow.com/questions/1133857/how-accurate-is-pythons-time-sleep
 def sleep(duration, get_now=time.perf_counter):
     now = get_now()
@@ -132,7 +134,7 @@ for i, cur_time in enumerate(jump_times[:-1]):
     # sleep(pause_time - 0.012)
     get_now = time.perf_counter
     now = get_now()
-    end = now + pause_time - 0.008
+    end = now + pause_time - 0.011
     to_break = False
     while now < end:
         now = get_now()
@@ -149,7 +151,10 @@ for i, cur_time in enumerate(jump_times[:-1]):
 # Now collect relevant stats: score
 # gets downloaded to 
 
-WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, "#final-score")))
+# horrible coding
+while not driver.execute_script('return window.gameOverScreenShown'):
+    pass
+
 
 score = driver.find_element(By.CSS_SELECTOR, "#final-score")
 score_num = int(score.get_attribute('innerHTML'))

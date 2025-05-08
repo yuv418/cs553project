@@ -118,6 +118,8 @@ export function showGameOverScreen(jwt: string) {
                     }
                 }, { once: true });
             }
+
+            window.gameOverScreenShown = true
         }
     })
 
