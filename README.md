@@ -14,7 +14,6 @@ FlappyGo! can be deployed in various configurations to support research on laten
 2. **Microservices on Single Machine** - Services split but running on the same host
 3. **Microservices Across Availability Zones** - Services distributed across multiple AZs in one region
 4. **Microservices Across Regions** - Services distributed across multiple regions
-5. **Microservices Globally Distributed** - Services deployed globally for maximum distribution
 
 These deployment patterns can be configured using our Terraform infrastructure as code.
 
@@ -59,6 +58,22 @@ To quickly run FlappyGo! with proper WebTransport support:
 ./run.sh --mode microservices
 ```
 
+For cloud deployment:
+
+```bash
+# Deploy as monolith on a single instance
+./deploy.sh --deployment-mode monolith --deployment-pattern single_instance
+
+# Deploy as microservices in one availability zone
+./deploy.sh --deployment-mode microservices --deployment-pattern single_instance
+
+# Deploy as microservices across availability zones
+./deploy.sh --deployment-mode microservices --deployment-pattern multi_az
+
+# Deploy as globally distributed microservices
+./deploy.sh --deployment-mode microservices --deployment-pattern multi_region
+```
+
 ## Detailed Deployment Instructions
 
 ### Monolithic Deployment
@@ -94,9 +109,48 @@ make <component>  # where <component> is one of: initiator, worldgen, engine, au
 
 NOTE: Different components require communication with specific other components. Pass the URLs of those services as environment variables when executing the binaries (see Monolith run command above).
 
+### Cloud Deployment
+
+#### Deployment Patterns
+
+The FlappyGo! infrastructure supports the following deployment patterns:
+
+1. **Monolith Running on 1 Machine**
+   - All services bundled in a single binary
+   - Single EC2 instance deployment
+   - Configuration: `--deployment-mode monolith --deployment-pattern single_instance`
+   - Technical implementation: Uses the compute module to provision one EC2 instance with all services
+
+2. **Microservices Running in one AZ**
+   - Services separated but on the same VM
+   - Simulates microservices communication with minimal network latency
+   - Configuration: `--deployment-mode microservices --deployment-pattern single_instance`
+
+3. **Microservices Running on Different Computers in One Availability Zone**
+   - Services deployed on separate VMs within the same AZ
+   - Tests inter-service communication within a datacenter
+   - Configuration: `--deployment-mode microservices --deployment-pattern multi_az`
+
+4. **Microservices Running on Different Computers in One Region**
+   - Services distributed across multiple AZs in one region
+   - Tests cross-AZ latency patterns
+   - Configuration: `--deployment-mode microservices --deployment-pattern multi_region`
+
+#### Instance Configuration and User Data
+
+Each instance is provisioned with a custom user data script that:
+
+1. Installs required dependencies (Go, Git, Protocol Buffers)
+2. Configures system settings for WebTransport (UDP buffer sizes)
+3. Generates or mounts TLS certificates
+4. Clones the application repository
+5. Builds and launches the appropriate services
+
+For microservices, the user data script includes service discovery information through environment variables, allowing each service to locate and communicate with its dependencies.
+
 #### Docker Local Deployment
 
-For local testing, you can use Docker Compose:
+For local testing with the same infrastructure patterns, you can use Docker Compose:
 
 ```bash
 # Run as monolith
@@ -105,6 +159,32 @@ docker-compose --profile monolith up
 # Run as microservices
 docker-compose --profile microservices up
 ```
+
+#### Custom Terraform Deployment
+
+For advanced configurations, you can use Terraform directly:
+
+```bash
+cd terraform
+terraform init
+
+# Customize variables as needed
+terraform apply -var="deployment_mode=microservices" \
+  -var="deployment_pattern=multi_region" \
+  -var="aws_region=us-east-1" \
+  -var="use_load_balancer=true"
+```
+
+The Terraform configuration provides several customization variables:
+
+| Variable               | Description                                           | Default Value    |
+|------------------------|-------------------------------------------------------|------------------|
+| `aws_region`           | Primary AWS region for deployment                     | `us-west-2`      |
+| `aws_regions`          | List of regions for global deployment                 | Multiple regions |
+| `availability_zones`   | AZs to use within each region                         | `["a", "b", "c"]`|
+| `deployment_mode`      | `monolith` or `microservices`                         | `monolith`       |
+| `deployment_pattern`   | `single_instance`, `multi_az`, `multi_region`,        | `single_instance`|
+| `instance_type`        | EC2 instance size                                     | `t2.micro`       |
 
 ## Client Setup
 
@@ -185,6 +265,17 @@ For local development, you can use the certificates provided in the `certs` dire
 ```
 
 This will create a new set of certificates in the `./certs` directory and provide instructions for configuring your browser to trust them.
+
+### Custom Certificates
+
+For production deployments, you can provide your own certificates:
+
+1. **Local Deployment**: Mount your certificates as volumes in the docker-compose.yml file
+2. **Cloud Deployment**: Use the `--certificate-path` and `--private-key-path` options with the deployment script
+
+```bash
+./deploy.sh --certificate-path /path/to/cert.pem --private-key-path /path/to/key.pem
+```
 
 ## Credits
 
