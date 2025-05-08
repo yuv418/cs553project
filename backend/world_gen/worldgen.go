@@ -27,7 +27,7 @@ func GenerateWorld(ctx *commondata.ReqCtx, req *worldgenpb.WorldGenReq) (*worldg
 		remaining := req.ViewportHeight - start
 		// If the remaining amount is less than the gap
 		if remaining < thresh {
-			height = ((1 * remaining) / 2) + rand.Int31n(remaining/4)
+			height = ((2 * remaining) / 3) + rand.Int31n(remaining/6)
 		} else if remaining > maxHeight {
 			height = ((1 * remaining) / 4) + rand.Int31n(remaining/4)
 		} else {
