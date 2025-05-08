@@ -74,6 +74,9 @@ for i, time in enumerate(jump_times[:-1]):
     pause_time = (jump_times[i+1] - time) / 1000
     print(f"pausing for {pause_time}")
 
+    # TODO how to configure this?
     chain.pause(pause_time)
 
 chain.perform()
+
+# Now collect relevant stats: score

@@ -41,7 +41,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 input::Event::Keyboard(KeyboardEvent::Key(ref ev))
                     if ev.key() == 57 && ev.key_state() == KeyState::Pressed =>
                 {
-                    println!("{},{}", ev.key(), ev.time());
+                    // Subtle input lag
+                    // requires subtraction
+                    println!("{},{}", ev.key(), ev.time() - 2);
                 }
                 _ => {}
             }
