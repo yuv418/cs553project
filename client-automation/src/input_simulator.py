@@ -18,6 +18,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.support import expected_conditions as EC
+
 import csv
 
 cwd = os.getcwd()
@@ -64,6 +66,9 @@ submit = driver.find_element(By.CSS_SELECTOR, ".form-group")
 username.send_keys("admin")
 password.send_keys("password")
 submit.submit()
+
+# https://stackoverflow.com/questions/59130200/selenium-wait-until-element-is-present-visible-and-interactable
+WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, "#jump-instruction")))
 
 # turn the input into an action chain.
 chain = ActionChains(driver)
