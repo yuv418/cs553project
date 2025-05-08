@@ -1,0 +1,18 @@
+[project]
+name = "client-automation"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Ramesh Balaji",email = "me@ramesh.tv"}
+]
+readme = "README.md"
+requires-python = ">=3.9, <3.12"
+dependencies = [
+    "python-libinput (>=0.1.0,<0.2.0)",
+    "selenium (>=4.32.0,<5.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
