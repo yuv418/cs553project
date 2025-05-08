@@ -6,5 +6,6 @@ interface ImportMetaEnv {
     readonly VITE_SCORE_SERVICE_URL: string
     readonly VITE_WEBTRANSPORT_GAME_URL: string
     readonly VITE_WEBTRANSPORT_MUSIC_URL: string
+    readonly VITE_LOG_LATENCY: string
     readonly VITE_DEBUG: boolean
 }

@@ -20,6 +20,8 @@ export function logReceiveTime(type: LatencyType) {
 }
 
 export function downloadLatencyCSV() {
+  if (!import.meta.env.VITE_LOG_LATENCY) { return; }
+
   let csv = "type,direction,time\n";
   for (const type of Object.keys(latencyLogs) as LatencyType[]) {
     const log = latencyLogs[type];

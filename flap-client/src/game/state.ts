@@ -5,7 +5,9 @@ import { showGameOverScreen, updateScore } from './ui';
 import { logReceiveTime } from '../latencyLogger';
 
 export function updateGameState(jwt: string, frame: GenerateFrameReq) {
-    logReceiveTime('frame');
+    if (import.meta.env.VITE_LOG_LATENCY) {
+        logReceiveTime('frame');
+    }
     // Update game state
     if (frame.gameOver) {
         showGameOverScreen(jwt);

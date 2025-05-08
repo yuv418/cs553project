@@ -88,7 +88,9 @@ export async function startGameTransport(jwt: string, gameId: string) {
 async function sendGameInput(gameId: string) {
     if (!gameWriter) return;
 
-    logSendTime('input');
+    if (import.meta.env.VITE_LOG_LATENCY) {
+        logSendTime('input');
+    }
 
     const inputReq = create(engine.GameEngineInputReqSchema, {
         gameId: gameId,
