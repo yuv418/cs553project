@@ -43,7 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 {
                     // Subtle input lag
                     // requires subtraction
-                    println!("{},{}", ev.key(), ev.time() - 2);
+                    println!("{},{}", ev.key(), ev.time());
                 }
                 _ => {}
             }

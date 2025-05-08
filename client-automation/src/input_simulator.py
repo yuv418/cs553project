@@ -21,9 +21,18 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
 
 import csv
+import time
+
+# https://stackoverflow.com/questions/1133857/how-accurate-is-pythons-time-sleep
+def sleep(duration, get_now=time.perf_counter):
+    now = get_now()
+    end = now + duration
+    while now < end:
+        now = get_now()
 
 cwd = os.getcwd()
 sel_folder = os.path.abspath(os.path.join(cwd, "selenium"))
+stat_dir = os.getenv("STAT_DIR")
 game_url = os.getenv("GAME_URL")
 input_csv = os.getenv("INPUT_CSV")
 jump_times = []
@@ -71,17 +80,67 @@ submit.submit()
 WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, "#jump-instruction")))
 
 # turn the input into an action chain.
-chain = ActionChains(driver)
-for i, time in enumerate(jump_times[:-1]):
-    chain.key_down(Keys.SPACE)
-    chain.key_up(Keys.SPACE)
-
-    pause_time = (jump_times[i+1] - time) / 1000
-    print(f"pausing for {pause_time}")
+chain = ActionChains(driver).key_down(Keys.SPACE).key_up(Keys.SPACE)
+body = driver.find_element(By.CSS_SELECTOR, "body")
+for i, cur_time in enumerate(jump_times[:-1]):
+    #print("Sending space")
+    #body.send_keys(Keys.SPACE)
+    #https://stackoverflow.com/questions/62501219/how-to-send-keys-to-a-canvas-element-for-longer-duration
+    driver.execute_script('''
+    var keydownEvt = new KeyboardEvent('keydown', {
+        altKey:false,
+        altKey: false,
+        bubbles: true,
+        cancelBubble: false,
+        cancelable: true,
+        charCode: 0,
+        code: "Space",
+        composed: true,
+        ctrlKey: false,
+        currentTarget: null,
+        defaultPrevented: true,
+        detail: 0,
+        eventPhase: 0,
+        isComposing: false,
+        isTrusted: true,
+        key: " ",
+        keyCode: 32,
+        location: 0,
+        metaKey: false,
+        repeat: false,
+        returnValue: false,
+        shiftKey: false,
+        type: "keydown",
+        which: 32,
+    });
+    arguments[0].dispatchEvent(keydownEvt);
+    ''', body)
 
     # TODO how to configure this?
-    chain.pause(pause_time)
+    pause_time = (jump_times[i+1] - cur_time) / 1000
+    # sleep(pause_time - 0.012)
+    get_now = time.perf_counter
+    now = get_now()
+    end = now + pause_time - 0.008
+    to_break = False
+    while now < end:
+        now = get_now()
+        if len(driver.find_elements(By.CSS_SELECTOR, "#past-scores > p")) > 0:
+            to_break = True
+    if to_break:
+        break
 
-chain.perform()
+    # To test failures
+    # sleep(pause_time + 0.1)
+
+
 
 # Now collect relevant stats: score
+# gets downloaded to 
+
+WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, "#final-score")))
+score = driver.find_element(By.CSS_SELECTOR, "#final-score")
+score_num = int(score.get_attribute('innerHTML'))
+
+print(score_num)
+
