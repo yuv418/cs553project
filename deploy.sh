@@ -239,6 +239,7 @@ terraform apply tfplan
 # Show outputs
 echo "============================================================"
 echo "Deployment completed successfully!"
+echo "Note: It may take a few minutes for the instances to be fully initialized."
 echo "Service endpoints:"
 terraform output -json service_endpoints
 
