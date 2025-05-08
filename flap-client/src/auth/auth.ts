@@ -20,10 +20,15 @@ export const initiatorClient = createClient(InitiatorService, initiatorTransport
 
 export async function handleLogin(username: string, password: string): Promise<AuthResponse | null> {
     try {
+        let now = performance.now()
         const response = await authClient.authenticate({
             username,
             password
         });
+        let elapsed = performance.now()
+
+        window.authLatency = elapsed - now
+
         if (response.jwtToken) {
             localStorage.setItem('auth_token', response.jwtToken);
             return response;

@@ -19,9 +19,13 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
+from datetime import datetime
+
 
 import csv
 import time
+import json
+import shutil
 
 # https://stackoverflow.com/questions/1133857/how-accurate-is-pythons-time-sleep
 def sleep(duration, get_now=time.perf_counter):
@@ -32,7 +36,10 @@ def sleep(duration, get_now=time.perf_counter):
 
 cwd = os.getcwd()
 sel_folder = os.path.abspath(os.path.join(cwd, "selenium"))
-stat_dir = os.getenv("STAT_DIR")
+# https://www.geeksforgeeks.org/python-strftime-function/
+stat_dir = os.getenv("STAT_DIR") if os.getenv("STAT_DIR") else os.path.abspath(os.path.join("..", "data", "client", datetime.now().strftime("%Y%m%d_%H%M%S")))
+print(f"outputting to {stat_dir}")
+os.makedirs(stat_dir)
 game_url = os.getenv("GAME_URL")
 input_csv = os.getenv("INPUT_CSV")
 jump_times = []
@@ -59,6 +66,10 @@ for it in sys.argv[1:]:
 
 
 options.add_argument(f"--user-data-dir={sel_folder}")
+
+# https://stackoverflow.com/questions/71716460/how-to-change-download-directory-location-path-in-selenium-using-chrome
+prefs = {'download.default_directory': stat_dir}
+options.add_experimental_option("prefs", prefs)
 
 driver = webdriver.Chrome(options=options)
 driver.get(game_url)
@@ -139,8 +150,13 @@ for i, cur_time in enumerate(jump_times[:-1]):
 # gets downloaded to 
 
 WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, "#final-score")))
+
 score = driver.find_element(By.CSS_SELECTOR, "#final-score")
 score_num = int(score.get_attribute('innerHTML'))
+auth_latency = driver.execute_script("return window.authLatency.toFixed(3);")
 
+with open(os.path.join(stat_dir, 'extra_data.json'), 'w') as extra_f:
+    json.dump({'score': score_num, 'auth_latency': auth_latency}, extra_f)
+
+print(auth_latency)
 print(score_num)
-
