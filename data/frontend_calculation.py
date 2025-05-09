@@ -69,8 +69,10 @@ def process_seed(ts_dir, collected_dir, seed, out_root, deploy_type):
         latency_plot_data['audio'][run_id] = (times_a, lats_a)
         latency_plot_data['frame'][run_id] = (times_f, lats_f)
 
-        jitter_plot_data['audio'][run_id] = (times_a[1:], compute_jitter(lats_a)) if len(lats_a) > 1 else ([], [])
-        jitter_plot_data['frame'][run_id] = (times_f[1:], compute_jitter(lats_f)) if len(lats_f) > 1 else ([], [])
+        # print(f"frame timestamps {frm}")
+
+        jitter_plot_data['audio'][run_id] = (aud[1:], compute_jitter(aud)) if len(lats_a) > 1 else ([], [])
+        jitter_plot_data['frame'][run_id] = (frm[1:], compute_jitter(frm)) if len(lats_f) > 1 else ([], [])
 
         avg_data.append({
             'Run': run_id,
@@ -137,9 +139,11 @@ def process_seed(ts_dir, collected_dir, seed, out_root, deploy_type):
     plt.close(fig)
 
 def main():
-    base = Path.home() / 'data'
+    base = Path(os.getcwd()) / 'data'
     out_root = base / 'graphs' / 'frontend'
     out_root.mkdir(parents=True, exist_ok=True)
+
+    print(base)
 
     for ts in sorted(base.iterdir()):
         if not ts.name.startswith('2025') or not ts.is_dir():
@@ -167,5 +171,5 @@ def main():
                 print(f"Processing seed {seed} in {ts.name}/{collected.name}")
                 process_seed(ts, collected, seed, out_root, deploy_type)
 
-if __name__ == '__main__':
+if __name__=="__main__":
     main()
