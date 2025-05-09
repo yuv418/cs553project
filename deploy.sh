@@ -136,7 +136,7 @@ if [[ -z "$SSH_KEY_PATH" ]]; then
         mkdir -p "$CERTS_DIR"
         SSH_KEY_PATH=$(generate_ssh_key "$CERTS_DIR" "ssh_key")
     fi
-    KEY_NAME="flappygo-key"
+    KEY_NAME="flappygo-key1"
 fi
 
 # Validate SSH key
@@ -232,6 +232,11 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
   echo "Deployment cancelled."
   exit 0
 fi
+
+# Write the deploy time to a file
+DEPLOY_TIME_FILE="deploy_time.txt"
+echo $(date +"%Y%m%d_%H%M%S") > "$DEPLOY_TIME_FILE"
+echo "Deployment time recorded in $DEPLOY_TIME_FILE"
 
 # Apply terraform plan
 terraform apply tfplan

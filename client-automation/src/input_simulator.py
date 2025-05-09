@@ -96,6 +96,7 @@ WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR,
 # turn the input into an action chain.
 chain = ActionChains(driver).key_down(Keys.SPACE).key_up(Keys.SPACE)
 body = driver.find_element(By.CSS_SELECTOR, "body")
+
 for i, cur_time in enumerate(jump_times[:-1]):
     #print("Sending space")
     #body.send_keys(Keys.SPACE)
@@ -130,8 +131,18 @@ for i, cur_time in enumerate(jump_times[:-1]):
     arguments[0].dispatchEvent(keydownEvt);
     ''', body)
 
+
     # TODO how to configure this?
     pause_time = (jump_times[i+1] - cur_time) / 1000
+    print(f"Pressed space and waiting {pause_time}")
+    # wait for worldgen
+    if i == 0:
+        while not driver.execute_script("return window.firstFrameReceived"):
+            pass
+        pause_time -= 0.005
+        #print(pause_time)
+        #print("Got first frame")
+
     # sleep(pause_time - 0.012)
     get_now = time.perf_counter
     now = get_now()

@@ -5,6 +5,8 @@ import { showGameOverScreen, updateScore } from './ui';
 import { logReceiveTime } from '../latencyLogger';
 
 export function updateGameState(jwt: string, frame: GenerateFrameReq) {
+    window.firstFrameReceived = true
+
     if (import.meta.env.VITE_LOG_LATENCY) {
         logReceiveTime('frame');
     }

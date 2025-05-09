@@ -1,4 +1,22 @@
 flap-client/.env
-# certs
+certs
 # FOR RAMESH!
+<<<<<<< HEAD
+<<<<<<< HEAD
+.credentials
+
+stat/*
+!stat/.gitkeep
+
+=======
 # .credentials
+
+stat/*
+!stat/.gitkeep
+>>>>>>> 11cd88d17e93b7d023d55471d4b3881998ba47fe
+=======
+# .credentials
+
+stat/*
+!stat/.gitkeep
+>>>>>>> 11cd88d17e93b7d023d55471d4b3881998ba47fe
