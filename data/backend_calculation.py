@@ -101,13 +101,15 @@ def process_csv(csv_path: Path, out_root: Path):
     # 3) Plot average latency bar
     plt.figure(figsize=(10, 6))
     plt.bar(avg['DestSvcName'], avg['AverageLatency'])
-    plt.xlabel('DestSvcName')
-    plt.ylabel('Average Latency (ReqTime)')
-    plt.title(f'Average Latency by DestSvcName\n({name})')
+    plt.xlabel('Destination Service', fontsize=12)
+    plt.ylabel('Latency (ms)', fontsize=12)
+    plt.title(f'Average Latency by Service ({name})', fontsize=14, pad=15)
     plt.grid(axis='y')
-    plt.tight_layout()
-    plt.savefig(out_dir / 'average_latency.png')
+    plt.tight_layout(pad=2.0)
+    avg_plot_path = out_dir / 'average_latency.png'
+    plt.savefig(avg_plot_path, bbox_inches='tight')
     plt.close()
+    print(f"    – Saved average latency plot: {avg_plot_path}")
 
     # 4) Plot small-multiples with distinct colors
     n = len(services)
@@ -121,19 +123,20 @@ def process_csv(csv_path: Path, out_root: Path):
         lats = mapping[svc]
         color = cmap(idx % cmap.N)
         ax.plot(range(len(lats)), lats, marker='o', linestyle='-', color=color)
-        ax.set_title(svc)
-        ax.set_xlabel('Instance')
-        ax.set_ylabel('Latency')
+        ax.set_title(svc, fontsize=12)
+        ax.set_xlabel('Instance', fontsize=10)
+        ax.set_ylabel('Latency (ms)', fontsize=10)
         ax.grid(True)
 
     for ax in axes.flat[n:]:
         ax.set_visible(False)
 
-    fig.suptitle(f'Latency Trends Over Time\n({name})', y=1.02)
-    plt.tight_layout()
-    plt.savefig(out_dir / 'latency_trends.png')
+    fig.suptitle(f'Latency Trends ({name})', fontsize=14, y=1.05)
+    plt.tight_layout(pad=2.0)
+    trends_plot_path = out_dir / 'latency_trends.png'
+    plt.savefig(trends_plot_path, bbox_inches='tight')
     plt.close()
-    print(f"    – Generated stats and plots in {out_dir}")
+    print(f"    – Saved latency trends plot: {trends_plot_path}")
 
 def main():
     base = Path.home() / "data"

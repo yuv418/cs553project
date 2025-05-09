@@ -23,7 +23,6 @@ def load_timestamps(csv_path):
                 frame_times.append(t)
     return sorted(input_times), sorted(audio_times), sorted(frame_times)
 
-
 def compute_latencies(ins, recvs):
     lats = []
     for t in ins:
@@ -31,16 +30,16 @@ def compute_latencies(ins, recvs):
         lats.append(recvs[idx] - t if idx < len(recvs) else None)
     return lats
 
-
 def compute_jitter(latencies):
     vals = [l for l in latencies if l is not None]
     return [abs(vals[i] - vals[i-1]) for i in range(1, len(vals))]
 
-
-def process_seed(ts_dir, collected_dir, seed, out_root):
-    seed_dir = out_root / ts_dir.name / seed
+def process_seed(ts_dir, collected_dir, seed, out_root, deploy_type):
+    # Include deploy_type in the output directory
+    seed_dir = out_root / f"{ts_dir.name}_{deploy_type}" / seed
     seed_dir.mkdir(parents=True, exist_ok=True)
-    # identify runs
+    
+    # Identify runs
     runs = sorted(
         [d for d in collected_dir.iterdir() if d.name.startswith(f"client_seed_{seed}_run_")],
         key=lambda d: int(d.name.rsplit('_', 1)[-1])
@@ -51,7 +50,7 @@ def process_seed(ts_dir, collected_dir, seed, out_root):
     jitter_plot_data = {'audio': {}, 'frame': {}}
 
     for run_dir in runs:
-        run_id = run_dir.name.rsplit('_',1)[-1]
+        run_id = run_dir.name.rsplit('_', 1)[-1]
         csv_file = run_dir / 'latency_data.csv'
         if not csv_file.exists():
             continue
@@ -137,7 +136,6 @@ def process_seed(ts_dir, collected_dir, seed, out_root):
     fig.savefig(seed_dir / 'average_latency_table.png')
     plt.close(fig)
 
-
 def main():
     base = Path.home() / 'data'
     out_root = base / 'graphs' / 'frontend'
@@ -146,6 +144,20 @@ def main():
     for ts in sorted(base.iterdir()):
         if not ts.name.startswith('2025') or not ts.is_dir():
             continue
+        # Check for deploy_type file
+        dt_file = ts / 'deploy_type'
+        if not dt_file.is_file():
+            print(f"  ✗ No deploy_type file in {ts.name}, skipping")
+            continue
+        # Read the first non-empty line from deploy_type
+        with open(dt_file) as f:
+            deploy_types = [line.strip() for line in f if line.strip()]
+        if not deploy_types:
+            print(f"  ✗ Empty deploy_type file in {ts.name}, skipping")
+            continue
+        deploy_type = deploy_types[0]  # Use the first deploy type
+        print(f"  • Deploy type: {deploy_type}")
+
         for collected in ts.iterdir():
             if not collected.name.startswith('collected'):
                 continue
@@ -153,8 +165,7 @@ def main():
             seeds = set(d.name.split('_')[2] for d in runs)
             for seed in seeds:
                 print(f"Processing seed {seed} in {ts.name}/{collected.name}")
-                process_seed(ts, collected, seed, out_root)
+                process_seed(ts, collected, seed, out_root, deploy_type)
 
 if __name__ == '__main__':
     main()
-
