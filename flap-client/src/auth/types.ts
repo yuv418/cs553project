@@ -7,6 +7,7 @@ export interface JWTPayload {
 declare global {
     interface Window {
         authLatency: number;
+        initiatorLatency: number;
         gameOverScreenShown: boolean;
         firstFrameReceived: boolean;
     }

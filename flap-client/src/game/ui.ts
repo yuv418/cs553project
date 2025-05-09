@@ -162,6 +162,7 @@ export async function startGame(response: AuthResponse) {
     const birdSize = getBirdSize();
 
     try {
+        let now = performance.now()
         const startGameResponse = await initiatorClient.startGame({
             jwt: response.jwtToken,
             viewportWidth: gameContainer.clientWidth,
@@ -173,6 +174,8 @@ export async function startGame(response: AuthResponse) {
                 "Authorization": `Bearer ${response.jwtToken}`
             }
         });
+        let elapsed = performance.now()
+        window.initiatorLatency = elapsed - now
 
         if (startGameResponse.gameId) {
             hideJumpInstruction();
