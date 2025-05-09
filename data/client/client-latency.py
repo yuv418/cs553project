@@ -4,10 +4,8 @@ import bisect
 import os
 import matplotlib.pyplot as plt
 
-# 1. Path to your CSV
+# 1. Load CSV
 csv_path = os.path.expanduser('~/data/client/latency_data.csv')
-
-# 2. Read and split timestamps
 input_times = []
 audio_times = []
 frame_times = []
@@ -24,35 +22,52 @@ with open(csv_path, newline='') as f:
         elif tp == 'frame' and direction == 'recv':
             frame_times.append(t)
 
-# 3. Sort (just in case)
+# 2. Sort
 input_times.sort()
 audio_times.sort()
 frame_times.sort()
 
-# 4. Helper to pair each recv with the nearest preceding send
-def nearest_preceding(send_list, recv_time):
-    idx = bisect.bisect_right(send_list, recv_time) - 1
-    return send_list[idx] if idx >= 0 else None
+# 3. For each input, find the next audio & frame via bisect
+audio_latencies = []
+frame_latencies = []
 
-# 5. Compute latencies (in same ms units)
-audio_latencies = [t - nearest_preceding(input_times, t) for t in audio_times]
-frame_latencies = [t - nearest_preceding(input_times, t) for t in frame_times]
+for t_in in input_times:
+    # find first audio > t_in
+    idx_a = bisect.bisect_right(audio_times, t_in)
+    if idx_a < len(audio_times):
+        audio_latencies.append(audio_times[idx_a] - t_in)
+    else:
+        audio_latencies.append(None)
 
-# 6. Plot latency vs. instance
+    # find first frame > t_in
+    idx_f = bisect.bisect_right(frame_times, t_in)
+    if idx_f < len(frame_times):
+        frame_latencies.append(frame_times[idx_f] - t_in)
+    else:
+        frame_latencies.append(None)
+
+# 4. Clean out any None (if you prefer)
+instances = list(range(len(input_times)))
+audio_vals = [lat for lat in audio_latencies if lat is not None]
+frame_vals = [lat for lat in frame_latencies if lat is not None]
+inst_audio = [i for i, lat in enumerate(audio_latencies) if lat is not None]
+inst_frame = [i for i, lat in enumerate(frame_latencies) if lat is not None]
+
+# 5. Plot per-input-instance latencies
 plt.figure()
-plt.plot(range(len(audio_latencies)), audio_latencies, label='Audio')
-plt.plot(range(len(frame_latencies)), frame_latencies, label='Frame')
-plt.xlabel('Instance Index')
+plt.plot(inst_audio, audio_vals, 'o-', label='Audio')
+plt.plot(inst_frame, frame_vals, 'o-', label='Frame')
+plt.xlabel('Input Instance Index')
 plt.ylabel('Latency (ms)')
-plt.title('Per-Instance Latencies')
+plt.title('Per-Input Latencies')
 plt.legend()
 plt.tight_layout()
 plt.savefig('latency_instances.png')
 plt.close()
 
-# 7. Plot average latencies
-avg_audio = sum(audio_latencies) / len(audio_latencies)
-avg_frame = sum(frame_latencies) / len(frame_latencies)
+# 6. Plot average
+avg_audio = sum(audio_vals) / len(audio_vals)
+avg_frame = sum(frame_vals) / len(frame_vals)
 
 plt.figure()
 plt.bar(['Audio', 'Frame'], [avg_audio, avg_frame])
@@ -62,7 +77,5 @@ plt.tight_layout()
 plt.savefig('average_latency.png')
 plt.close()
 
-print("Saved plots as:")
-print(" • latency_instances.png")
-print(" • average_latency.png")
+print("Saved latency_instances.png and average_latency.png")
 
