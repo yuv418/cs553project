@@ -1,1 +1,1 @@
-single_instance
+microservices_single_instance

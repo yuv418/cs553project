@@ -5,15 +5,34 @@
 # setup env vars
 OUTPUT=$(terraform -chdir=terraform output -json service_endpoints)
 CLIENT_HOST=$(echo $OUTPUT | jq -r .client)
+
 ENGINE_HOST=$(echo $OUTPUT | jq -r .engine)
 MUSIC_HOST=$(echo $OUTPUT | jq -r .music)
 INITIATOR_HOST=$(echo $OUTPUT | jq -r .initiator)
 WORLDGEN_HOST=$(echo $OUTPUT | jq -r .worldgen)
+AUTH_HOST=$(echo $OUTPUT | jq -r .auth)
+SCORE_HOST=$(echo $OUTPUT | jq -r .score)
+
 SPKI_HASH=$(cat ./certs/spki_hash.txt)
 DEPLOY_TIME=$(cat ./terraform/deploy_time.txt)
 DEPLOY_TYPE=$(cat ./terraform/deploy_type.txt)
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+TIMESTAMP=collected_$(date +"%Y%m%d_%H%M%S")
 
+# svcs
+
+# worldgen 
+# auth
+# engine
+# initiator
+# music
+# score
+
+restart_svc() {
+    ssh -i terraform/certs/ssh_key ec2-user@$1 <<EOF
+    sudo systemctl restart flappygo-${2}
+EOF
+
+}
 
 run_for_seed() {
     # https://stackoverflow.com/questions/4412238/what-is-the-cleanest-way-to-ssh-and-run-multiple-commands-in-bash
@@ -38,14 +57,48 @@ run_iteration() {
 
 }
 
+# ../stat/$DEPLOY_TIME/$TIMESTAMP/client_seed_${1}_run_${2} 
+
 # https://stackoverflow.com/questions/49110/how-do-i-write-a-for-loop-in-bash
 run_test() {
     run_for_seed $1
     for i in $(seq 1 5); do
-        run_iteration $1 $i
+        echo "Run $i seed $1"
+
+        score=0
+        while [ "$score" -eq 0 ]
+        do
+            if test -d "./stat/$DEPLOY_TIME/$TIMESTAMP/client_seed_${1}_run_${i}/"; then 
+                rm -rf "./stat/$DEPLOY_TIME/$TIMESTAMP/client_seed_${1}_run_${i}/"
+            fi
+
+            run_iteration $1 $i
+            score=$(cat ./stat/$DEPLOY_TIME/$TIMESTAMP/client_seed_${1}_run_${i}/extra_data.json | jq .score)
+            # https://serverfault.com/questions/7503/how-to-determine-if-a-bash-variable-is-empty
+            if [[ -z "${score}" ]]; then
+                score=0
+            fi
+            echo "Got a score of $score"
+        done
     done
 
 }
+
+# this is for resetting logs 
+echo "Restarting svcs"
+
+restart_svc $WORLDGEN_HOST worldgen 
+restart_svc $AUTH_HOST auth
+restart_svc $ENGINE_HOST engine
+restart_svc $INITIATOR_HOST initiator
+restart_svc $MUSIC_HOST music
+restart_svc $SCORE_HOST score
+
+sleep 5
+
+echo "Restarted svcs"
+
+mkdir -p ./stat/$DEPLOY_TIME
 
 # could be done earlier, but whatever
 echo $DEPLOY_TYPE > ./stat/$DEPLOY_TIME/deploy_type

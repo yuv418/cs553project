@@ -39,7 +39,7 @@ def sleep(duration, get_now=time.perf_counter):
 cwd = os.getcwd()
 sel_folder = os.path.abspath(os.path.join(cwd, "selenium"))
 # https://www.geeksforgeeks.org/python-strftime-function/
-stat_dir = os.getenv("STAT_DIR") if os.getenv("STAT_DIR") else os.path.abspath(os.path.join("..", "data", "client", datetime.now().strftime("%Y%m%d_%H%M%S")))
+stat_dir = os.path.abspath(os.getenv("STAT_DIR")) if os.getenv("STAT_DIR") else os.path.abspath(os.path.join("..", "data", "client", datetime.now().strftime("%Y%m%d_%H%M%S")))
 print(f"outputting to {stat_dir}")
 os.makedirs(stat_dir)
 game_url = os.getenv("GAME_URL")
@@ -217,3 +217,6 @@ with open(os.path.join(stat_dir, 'extra_data.json'), 'w') as extra_f:
 print(auth_latency)
 print(initiator_latency)
 print(score_num)
+
+# to let download finish
+time.sleep(2)

@@ -240,7 +240,7 @@ echo "Deployment time recorded in $DEPLOY_TIME_FILE"
 
 # write deploy type to a file
 DEPLOY_TYPE_FILE="deploy_type.txt"
-echo "$DEPLOYMENT_MODE_$DEPLOYMENT_PATTERN" > $DEPLOY_TYPE_FILE
+echo "${DEPLOYMENT_MODE}_${DEPLOYMENT_PATTERN}" > $DEPLOY_TYPE_FILE
 
 
 # Apply terraform plan
