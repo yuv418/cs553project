@@ -145,7 +145,7 @@ for i, cur_time in enumerate(jump_times[:-1]):
         # HACK: first key press doesn't register
         while not driver.execute_script("return window.firstFrameReceived"):
             if not pressed:
-                time.sleep(0.5)
+                time.sleep(1.5)
                 driver.execute_script('''
                 var keydownEvt = new KeyboardEvent('keydown', {
                     altKey:false,

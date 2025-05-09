@@ -1,1 +1,1 @@
-microservices_single_instance
+microservices_multi_az
