@@ -45,16 +45,20 @@ os.makedirs(stat_dir)
 game_url = os.getenv("GAME_URL")
 input_csv = os.getenv("INPUT_CSV")
 jump_times = []
+fudge_value = float('inf')
 
 print(f"sel_folder is {sel_folder}")
 print(f"input_csv is {input_csv}")
 
 with open(input_csv, newline='') as csvfile:
     reader = csv.reader(csvfile)
-    next(reader, None)
-    # skip header row
     for row in reader:
-        jump_times.append(int(row[1]))
+        # first row
+        if fudge_value == float('inf'):
+            fudge_value = float(row[2])
+            print(f"fudge {fudge_value}")
+        else:
+            jump_times.append(int(row[1]))
 
 # transform jump times
 jump_times = [i - jump_times[0] for i in jump_times]
@@ -146,7 +150,7 @@ for i, cur_time in enumerate(jump_times[:-1]):
     # sleep(pause_time - 0.012)
     get_now = time.perf_counter
     now = get_now()
-    end = now + pause_time - 0.016
+    end = now + pause_time - fudge_value
     to_break = False
     while now < end:
         now = get_now()
