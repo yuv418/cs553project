@@ -13,11 +13,16 @@ run_for_seed () {
         systemctl restart flappygo-worldgen
 EOF
 
+}
+
+run_iteration() {
     cd client-automation
 
     # you must set the GAME_IP
     
     INPUT_CSV=input_seeds/${1}.csv GAME_URL=http://${GAME_IP}:5173 poetry run python -i src/input_simulator.py  --origin-to-force-quic-on=$ENGINE_IP:4433,$MUSIC_IP:4434 --ignore-certificate-errors-spki-list=$SPKI_LIST
+
+    cd ..
 }
 
 run_for_seed 8525333463046388971

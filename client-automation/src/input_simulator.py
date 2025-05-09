@@ -162,7 +162,7 @@ score_num = int(score.get_attribute('innerHTML'))
 auth_latency = driver.execute_script("return window.authLatency.toFixed(3);")
 
 with open(os.path.join(stat_dir, 'extra_data.json'), 'w') as extra_f:
-    json.dump({'score': score_num, 'auth_latency': auth_latency}, extra_f)
+    json.dump({'score': score_num, 'auth_latency': auth_latency, 'seed': os.path.basename(input_csv).split(".")[0]}, extra_f)
 
 print(auth_latency)
 print(score_num)
