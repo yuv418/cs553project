@@ -168,7 +168,7 @@ def main():
 
             print(f" • Collected set: {collected}")
             for deploy in deploys:
-                if deploy.startswith("microservices_"):
+                if deploy.startswith(("microservices_", "microservices_multi_region")):
                     csv_path = combine_micro(ts_dir, collected, remote_dir, deploy, graphs_dir)
                     process_csv(csv_path, graphs_dir)
                 elif deploy.startswith("monolith"):
