@@ -136,7 +136,7 @@ if [[ -z "$SSH_KEY_PATH" ]]; then
         mkdir -p "$CERTS_DIR"
         SSH_KEY_PATH=$(generate_ssh_key "$CERTS_DIR" "ssh_key")
     fi
-    KEY_NAME="flappygo-key1"
+    KEY_NAME="flappygo-key2"
 fi
 
 # Validate SSH key

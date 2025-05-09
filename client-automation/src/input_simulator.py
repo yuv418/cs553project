@@ -146,7 +146,7 @@ for i, cur_time in enumerate(jump_times[:-1]):
     # sleep(pause_time - 0.012)
     get_now = time.perf_counter
     now = get_now()
-    end = now + pause_time - 0.011
+    end = now + pause_time - 0.016
     to_break = False
     while now < end:
         now = get_now()
