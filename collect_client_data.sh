@@ -19,11 +19,21 @@ run_iteration() {
     cd client-automation
 
     # you must set the GAME_IP
-    
-    INPUT_CSV=input_seeds/${1}.csv GAME_URL=http://${GAME_IP}:5173 poetry run python -i src/input_simulator.py  --origin-to-force-quic-on=$ENGINE_IP:4433,$MUSIC_IP:4434 --ignore-certificate-errors-spki-list=$SPKI_LIST
+    INPUT_CSV=input_seeds/${1}.csv GAME_URL=https://${CLIENT_IP} poetry run python -i src/input_simulator.py  --origin-to-force-quic-on=$ENGINE_IP:4433,$MUSIC_IP:4434 --ignore-certificate-errors-spki-list=$(cat certs/spki_hash.txt)
 
     cd ..
 }
 
 run_for_seed 8525333463046388971
+
+run_iteration
+run_iteration
+run_iteration
+run_iteration
+
 run_for_seed 6977347407732442987
+
+run_iteration
+run_iteration
+run_iteration
+run_iteration
