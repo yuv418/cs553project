@@ -6,12 +6,12 @@
 OUTPUT=$(terraform -chdir=terraform output -json service_endpoints)
 CLIENT_HOST=$(echo $OUTPUT | jq -r .client)
 
-ENGINE_HOST=$(echo $OUTPUT | jq -r .engine)
-MUSIC_HOST=$(echo $OUTPUT | jq -r .music)
-INITIATOR_HOST=$(echo $OUTPUT | jq -r .initiator)
-WORLDGEN_HOST=$(echo $OUTPUT | jq -r .worldgen)
-AUTH_HOST=$(echo $OUTPUT | jq -r .auth)
-SCORE_HOST=$(echo $OUTPUT | jq -r .score)
+ENGINE_HOST=$(echo $OUTPUT | jq -r .monolith)
+MUSIC_HOST=$(echo $OUTPUT | jq -r .monolith)
+INITIATOR_HOST=$(echo $OUTPUT | jq -r .monolith)
+WORLDGEN_HOST=$(echo $OUTPUT | jq -r .monolith)
+AUTH_HOST=$(echo $OUTPUT | jq -r .monolith)
+SCORE_HOST=$(echo $OUTPUT | jq -r .monolith)
 
 SPKI_HASH=$(cat ./certs/spki_hash.txt)
 DEPLOY_TIME=$(cat ./terraform/deploy_time.txt)
@@ -29,7 +29,7 @@ TIMESTAMP=collected_$(date +"%Y%m%d_%H%M%S")
 
 restart_svc() {
     ssh -i terraform/certs/ssh_key ec2-user@$1 <<EOF
-    sudo systemctl restart flappygo-${2}
+    sudo systemctl restart flappygo
 EOF
 
 }
@@ -38,12 +38,12 @@ run_for_seed() {
     # https://stackoverflow.com/questions/4412238/what-is-the-cleanest-way-to-ssh-and-run-multiple-commands-in-bash
     # need to be root!
     ssh -i terraform/certs/ssh_key ec2-user@$WORLDGEN_HOST <<EOF
-        sudo mkdir -p /etc/systemd/system/flappygo-worldgen.service.d/
+        sudo mkdir -p /etc/systemd/system/flappygo.service.d/
         # Hard mode
-        sudo sh -c 'echo -e "[Service]\nEnvironment=\"STABLE_WORLD_SEED=${1}\"" > /etc/systemd/system/flappygo-worldgen.service.d/seed.conf'
+        sudo sh -c 'echo -e "[Service]\nEnvironment=\"STABLE_WORLD_SEED=${1}\"" > /etc/systemd/system/flappygo.service.d/seed.conf'
         sudo cp /opt/flappygo/backend/statout/stats.csv /opt/flappygo/backend/statout/stats_old.csv
         sudo systemctl daemon-reload
-        sudo systemctl restart flappygo-worldgen
+        sudo systemctl restart flappygo
 EOF
 
 }
@@ -88,12 +88,8 @@ run_test() {
 # this is for resetting logs 
 echo "Restarting svcs"
 
-restart_svc $WORLDGEN_HOST worldgen 
-restart_svc $AUTH_HOST auth
-restart_svc $ENGINE_HOST engine
-restart_svc $INITIATOR_HOST initiator
-restart_svc $MUSIC_HOST music
-restart_svc $SCORE_HOST score
+# 1 is good
+restart_svc $WORLDGEN_HOST
 
 sleep 5
 
