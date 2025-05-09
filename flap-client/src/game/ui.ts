@@ -178,6 +178,8 @@ export async function startGame(response: AuthResponse) {
         window.initiatorLatency = elapsed - now
 
         if (startGameResponse.gameId) {
+            // for extraction
+            window.gameId = startGameResponse.gameId
             hideJumpInstruction();
             hideLoginContainer();
 

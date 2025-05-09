@@ -10,5 +10,6 @@ declare global {
         initiatorLatency: number;
         gameOverScreenShown: boolean;
         firstFrameReceived: boolean;
+        gameId: string;
     }
 }
