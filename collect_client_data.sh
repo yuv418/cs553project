@@ -19,21 +19,19 @@ run_iteration() {
     cd client-automation
 
     # you must set the GAME_IP
-    INPUT_CSV=input_seeds/${1}.csv GAME_URL=https://${CLIENT_IP} poetry run python -i src/input_simulator.py  --origin-to-force-quic-on=$ENGINE_IP:4433,$MUSIC_IP:4434 --ignore-certificate-errors-spki-list=$(cat certs/spki_hash.txt)
+    INPUT_CSV=input_seeds/${1}.csv GAME_URL=https://${CLIENT_IP} poetry run python -i src/input_simulator.py  --origin-to-force-quic-on=$ENGINE_IP:4433,$MUSIC_IP:4433 --ignore-certificate-errors-spki-list=$(cat certs/spki_hash.txt)
 
     cd ..
 }
 
-run_for_seed 8525333463046388971
+# https://stackoverflow.com/questions/49110/how-do-i-write-a-for-loop-in-bash
+run_test () {
+    run_for_seed $1
+    for i in $(seq 1 5);
+    do
+        run_iteration
+    done
+}
 
-run_iteration
-run_iteration
-run_iteration
-run_iteration
-
-run_for_seed 6977347407732442987
-
-run_iteration
-run_iteration
-run_iteration
-run_iteration
+run_test 8525333463046388971
+run_test 6977347407732442987
