@@ -138,10 +138,44 @@ for i, cur_time in enumerate(jump_times[:-1]):
 
     # TODO how to configure this?
     pause_time = (jump_times[i+1] - cur_time) / 1000
-    print(f"Pressed space and waiting {pause_time}")
+    # print(f"Pressed space and waiting {pause_time}")
     # wait for worldgen
     if i == 0:
+        pressed = False
+        # HACK: first key press doesn't register
         while not driver.execute_script("return window.firstFrameReceived"):
+            if not pressed:
+                time.sleep(0.5)
+                driver.execute_script('''
+                var keydownEvt = new KeyboardEvent('keydown', {
+                    altKey:false,
+                    altKey: false,
+                    bubbles: true,
+                    cancelBubble: false,
+                    cancelable: true,
+                    charCode: 0,
+                    code: "Space",
+                    composed: true,
+                    ctrlKey: false,
+                    currentTarget: null,
+                    defaultPrevented: true,
+                    detail: 0,
+                    eventPhase: 0,
+                    isComposing: false,
+                    isTrusted: true,
+                    key: " ",
+                    keyCode: 32,
+                    location: 0,
+                    metaKey: false,
+                    repeat: false,
+                    returnValue: false,
+                    shiftKey: false,
+                    type: "keydown",
+                    which: 32,
+                });
+                arguments[0].dispatchEvent(keydownEvt);
+                ''', body)
+                pressed = True
             pass
         pause_time -= 0.005
         #print(pause_time)

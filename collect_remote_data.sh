@@ -12,7 +12,7 @@ log_error() {
 
 # Check required commands
 for cmd in terraform jq rsync ssh; do
-    if ! command -v "$cmd" &> /dev/null; then
+    if ! command -v "$cmd" &>/dev/null; then
         log_error "$cmd is required but not installed"
         exit 1
     fi
@@ -38,8 +38,8 @@ if [[ ! -f "$DEPLOY_TIME_FILE" ]]; then
     exit 1
 fi
 DEPLOY_TIME=$(cat "$DEPLOY_TIME_FILE")
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-STAT_DIR="./stat/$DEPLOY_TIME/$TIMESTAMP"
+#TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+STAT_DIR="./stat/$DEPLOY_TIME/$1"
 
 # Create directories
 mkdir -p "$STAT_DIR"
@@ -61,24 +61,24 @@ echo "$ENDPOINTS" | jq empty 2>/dev/null || {
 # https://chatgpt.com/share/681d8185-2ce0-8000-be23-a8eff8217981
 mapfile -t LINES < <(echo "$ENDPOINTS" | jq -r 'to_entries[] | "\(.key)|\(.value)"')
 for LINE in "${LINES[@]}"; do
-    IFS='|' read -r SERVICE ENDPOINT <<< "$LINE"
+    IFS='|' read -r SERVICE ENDPOINT <<<"$LINE"
 
     if [[ -z "$SERVICE" || -z "$ENDPOINT" ]]; then
         log_error "Invalid service or endpoint found"
         continue
     fi
-    
+
     log_info "Collecting data from $SERVICE at $ENDPOINT"
-    
+
     # Create service directory
     mkdir -p "$STAT_DIR/$SERVICE"
-    
+
     # Test SSH connection first
     if ! ssh -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no -o ConnectTimeout=10 "ec2-user@$ENDPOINT" "exit" 2>/dev/null; then
         log_error "Cannot connect to $SERVICE at $ENDPOINT"
         continue
     fi
-    
+
     # Attempt to copy stats directory
     if ssh -i "$SSH_KEY_PATH" -o StrictHostKeyChecking=no "ec2-user@$ENDPOINT" "test -d /opt/flappygo/backend/statout"; then
         rsync -az --timeout=30 -e "ssh -i $SSH_KEY_PATH -o StrictHostKeyChecking=no" \
