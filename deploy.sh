@@ -233,6 +233,11 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
   exit 0
 fi
 
+# Write the deploy time to a file
+DEPLOY_TIME_FILE="deploy_time.txt"
+echo $(date +"%Y%m%d_%H%M%S") > "$DEPLOY_TIME_FILE"
+echo "Deployment time recorded in $DEPLOY_TIME_FILE"
+
 # Apply terraform plan
 terraform apply tfplan
 

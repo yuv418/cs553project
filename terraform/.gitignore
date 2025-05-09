@@ -2,8 +2,8 @@
 .terraform/
 
 # .tfstate files
-# *.tfstate
-# *.tfstate.*
+*.tfstate
+*.tfstate.*
 
 # Crash log files
 crash.log
@@ -38,3 +38,5 @@ terraform.rc
 
 !certs
 # For Ramesh! Sorry!!!
+
+deploy_time.txt
