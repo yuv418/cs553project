@@ -48,7 +48,8 @@ VITE_INITIATOR_SERVICE_URL=https://${initiator_url}:${initiator_port}
 VITE_SCORE_SERVICE_URL=https://${score_url}:${score_port}
 VITE_WEBTRANSPORT_GAME_URL=https://${engine_url}:4433/gameEngine/GameSession
 VITE_WEBTRANSPORT_MUSIC_URL=https://${music_url}:4433/music/MusicSession
-VITE_DEBUG=true
+VITE_LOG_LATENCY=1
+VITE_DEBUG=
 EOF
 
 # Build the production version

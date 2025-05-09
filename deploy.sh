@@ -238,6 +238,11 @@ DEPLOY_TIME_FILE="deploy_time.txt"
 echo $(date +"%Y%m%d_%H%M%S") > "$DEPLOY_TIME_FILE"
 echo "Deployment time recorded in $DEPLOY_TIME_FILE"
 
+# write deploy type to a file
+DEPLOY_TYPE_FILE="deploy_type.txt"
+echo "$DEPLOYMENT_MODE_$DEPLOYMENT_PATTERN" > $DEPLOY_TYPE_FILE
+
+
 # Apply terraform plan
 terraform apply tfplan
 

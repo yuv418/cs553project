@@ -11,7 +11,9 @@ INITIATOR_HOST=$(echo $OUTPUT | jq -r .initiator)
 WORLDGEN_HOST=$(echo $OUTPUT | jq -r .worldgen)
 SPKI_HASH=$(cat ./certs/spki_hash.txt)
 DEPLOY_TIME=$(cat ./terraform/deploy_time.txt)
+DEPLOY_TYPE=$(cat ./terraform/deploy_type.txt)
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+
 
 run_for_seed() {
     # https://stackoverflow.com/questions/4412238/what-is-the-cleanest-way-to-ssh-and-run-multiple-commands-in-bash
@@ -44,6 +46,9 @@ run_test() {
     done
 
 }
+
+# could be done earlier, but whatever
+echo $DEPLOY_TYPE > ./stat/$DEPLOY_TIME/deploy_type
 
 run_test 8525333463046388971
 run_test 6977347407732442987
