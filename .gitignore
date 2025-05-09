@@ -1,5 +1,5 @@
 flap-client/.env
-certs
+certs/*
 .credentials
 
 stat/*
