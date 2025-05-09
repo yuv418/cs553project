@@ -68,6 +68,7 @@ for it in sys.argv[1:]:
 
 
 options.add_argument(f"--user-data-dir={sel_folder}")
+options.add_argument("--ignore-certificate-errors")
 
 # https://stackoverflow.com/questions/71716460/how-to-change-download-directory-location-path-in-selenium-using-chrome
 prefs = {'download.default_directory': stat_dir}
