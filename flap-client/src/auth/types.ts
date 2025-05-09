@@ -3,3 +3,10 @@ export interface JWTPayload {
     username?: string;
     exp: number;
 }
+
+declare global {
+    interface Window {
+        authLatency: number;
+        gameOverScreenShown: boolean;
+    }
+}
