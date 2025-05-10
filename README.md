@@ -284,6 +284,12 @@ For production deployments, you can provide your own certificates:
 ./deploy.sh --certificate-path /path/to/cert.pem --private-key-path /path/to/key.pem
 ```
 
+## Adding Additional Users
+
+The `auth` microservice handles authentication of users and generation of JSON Web Tokens (JWTs), which are to be provided to other microservices.
+
+Currently, additional users can be added by either directly modifying the `users.json` file or adjusting the `auth.go` file to add additional users. Users added in this file will be automatically encrypted properly. A recompile is required.
+
 ## Credits
 
 ### Asset Credit
