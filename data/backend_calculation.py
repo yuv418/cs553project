@@ -102,7 +102,7 @@ def process_csv(csv_path: Path, out_root: Path):
     plt.figure(figsize=(10, 6))
     plt.bar(avg['DestSvcName'], avg['AverageLatency'])
     plt.xlabel('Destination Service', fontsize=12)
-    plt.ylabel('Latency (ms)', fontsize=12)
+    plt.ylabel('Latency (ns)', fontsize=12)
     plt.title(f'Average Latency by Service ({name})', fontsize=14, pad=15)
     plt.grid(axis='y')
     plt.tight_layout(pad=2.0)
@@ -125,7 +125,7 @@ def process_csv(csv_path: Path, out_root: Path):
         ax.plot(range(len(lats)), lats, marker='o', linestyle='-', color=color)
         ax.set_title(svc, fontsize=12)
         ax.set_xlabel('Instance', fontsize=10)
-        ax.set_ylabel('Latency (ms)', fontsize=10)
+        ax.set_ylabel('Latency (ns)', fontsize=10)
         ax.grid(True)
 
     for ax in axes.flat[n:]:
@@ -139,7 +139,7 @@ def process_csv(csv_path: Path, out_root: Path):
     print(f"    – Saved latency trends plot: {trends_plot_path}")
 
 def main():
-    base = Path.home() / "data"
+    base = Path(os.getcwd()) / "data"
     graphs_dir = base / "graphs" / "backend"
     graphs_dir.mkdir(parents=True, exist_ok=True)
     print(f"Graphs output directory: {graphs_dir}")
