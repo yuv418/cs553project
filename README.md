@@ -58,6 +58,8 @@ To quickly run FlappyGo! with proper WebTransport support:
 ./run.sh --mode microservices
 ```
 
+These use `docker-compose` to deploy a containerized version of the backend.
+
 For cloud deployment:
 
 ```bash
@@ -74,9 +76,12 @@ For cloud deployment:
 ./deploy.sh --deployment-mode microservices --deployment-pattern multi_region
 ```
 
+
 ## Detailed Deployment Instructions
 
 ### Monolithic Deployment
+
+For the following commands, make sure you are in the `backend` directory.
 
 Deploying FlappyGo! monolithically can be accomplished by executing:
 
@@ -108,6 +113,8 @@ make <component>  # where <component> is one of: initiator, worldgen, engine, au
 ```
 
 NOTE: Different components require communication with specific other components. Pass the URLs of those services as environment variables when executing the binaries (see Monolith run command above).
+
+If you want to use manual deployment and run the client, please skip down to the "Client Setup" instructions.
 
 ### Cloud Deployment
 
