@@ -4,4 +4,4 @@ certs/*
 
 stat/*
 !stat/.gitkeep
-
+terraform/certs/*
