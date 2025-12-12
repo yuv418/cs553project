@@ -2,6 +2,8 @@
 
 FlappyGo! is an enterprise-ready distribution of the classic game "Flappy Bird". It supports an optional, distributed architecture for its components. Deployers can choose to deploy FlappyGo! as a monolith, with its constituent components running in a single serverside app (plus client), or as microservices, with different components running in different locations and communicating.
 
+**By running FlappyGo in different configurations, we measured the playability of the game, both qualitatively and quantitatively. A report on our measurements and findings is available [here](https://ramesh.tv/reports/cs553project.pdf).**
+
 ## Overview
 
 The `backend` directory contains the game server, which is written in Go. It supports a variety of deployment patterns, where application binaries can be built via `make`.
